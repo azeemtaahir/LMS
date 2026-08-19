@@ -2,13 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../api/api";
 
-const MOCK_USERS = [
-  { id: 1, studentId: "STU-101", name: "John Doe", email: "student@gmail.com", role: "Student", department: "CS", semester: "Semester 5", registeredDate: "2024-01-15", status: "Active" },
-  { id: 2, studentId: "TCH-201", name: "Dr. Sarah Jenkins", email: "teacher@gmail.com", role: "Teacher", department: "CS", designation: "Professor", registeredDate: "2023-11-20", status: "Active" },
-  { id: 3, studentId: "STU-102", name: "Emily Davis", email: "emily.davis@university.edu", role: "Student", department: "IT", semester: "Semester 3", registeredDate: "2024-02-10", status: "Active" },
-  { id: 4, studentId: "TCH-202", name: "Prof. Michael Brown", email: "michael.brown@university.edu", role: "Teacher", department: "ECE", designation: "Head of Department (HOD)", registeredDate: "2023-09-05", status: "Active" },
-  { id: 5, studentId: "STU-103", name: "Alex Turner", email: "alex.turner@university.edu", role: "Student", department: "ME", semester: "Semester 7", registeredDate: "2024-03-01", status: "Active" },
-];
+const MOCK_USERS = [];
 
 const MOCK_RECENT_ISSUES = [];
 
@@ -30,6 +24,9 @@ const validateUserInput = (data) => {
 
 export const useMemberHook = () => {
   const [searchParams] = useSearchParams();
+  const searchParamQuery = searchParams.get("search") || "";
+  const roleParam = searchParams.get("role") || "All";
+
   const [stats, setStats] = useState({
     totalBooks: 0,
     registeredStudents: 0,
@@ -44,16 +41,11 @@ export const useMemberHook = () => {
   const [recentIssues, setRecentIssues] = useState([]);
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [students, setStudents] = useState([]);
-  const searchParamQuery = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(searchParamQuery);
   const [prevSearchParam, setPrevSearchParam] = useState(searchParamQuery);
-
-  if (prevSearchParam !== searchParamQuery) {
-    setPrevSearchParam(searchParamQuery);
-    setSearchQuery(searchParamQuery);
-  }
   const [selectedDept, setSelectedDept] = useState("All");
-  const [selectedRole, setSelectedRole] = useState("All");
+  const [selectedRole, setSelectedRole] = useState(roleParam);
+  const [prevRoleParam, setPrevRoleParam] = useState(roleParam);
   const [loading, setLoading] = useState(false);
 
   const [activeModal, setActiveModal] = useState(null);
@@ -61,23 +53,31 @@ export const useMemberHook = () => {
   const [studentFormData, setStudentFormData] = useState({ name: "", studentId: "", email: "", department: "CS", role: "Student", designation: "", semester: "Semester 1" });
   const [studentErrors, setStudentErrors] = useState({});
 
+  if (prevSearchParam !== searchParamQuery) {
+    setPrevSearchParam(searchParamQuery);
+    setSearchQuery(searchParamQuery);
+  }
+
+  if (prevRoleParam !== roleParam) {
+    setPrevRoleParam(roleParam);
+    setSelectedRole(roleParam);
+  }
+
   const processLoadedUsers = (memberRes) => {
     const storedRegistered = JSON.parse(localStorage.getItem("registered_users") || "[]");
     const dbMembers = memberRes.status === "fulfilled" && Array.isArray(memberRes.value?.data) ? memberRes.value.data : [];
     const normalizedDb = dbMembers.map((m) => ({
       id: m.id,
-      studentId: m.studentId || `MEM-${m.id}`,
+      studentId: m.studentId || m.user_id || `MEM-${m.id}`,
       name: m.name || `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'User',
-      email: m.email || 'user@library.com',
+      email: m.email || `${(m.first_name || 'user').toLowerCase()}@library.com`,
       role: m.role || 'Student',
       department: m.department || 'CS',
-      semester: m.semester || 'Semester 1',
-      designation: m.designation || '',
-      registeredDate: m.joined_date || m.created_at || '2024-01-01',
-      status: m.status || 'Active',
+      registeredDate: m.joined_date || m.created_at || new Date().toISOString().split("T")[0],
+      status: m.status || 'active',
     }));
 
-    const allCombined = [...storedRegistered, ...normalizedDb, ...MOCK_USERS];
+    const allCombined = [...storedRegistered, ...normalizedDb];
     const uniqueMap = new Map();
     allCombined.forEach((u) => {
       const roleLower = String(u.role || "").toLowerCase().trim();
@@ -153,19 +153,21 @@ export const useMemberHook = () => {
     const role = inputData.role || "Student";
     const password = inputData.password || "123456";
 
+    const first_name = inputData.first_name || fullName.split(" ")[0] || "User";
+    const last_name = inputData.last_name || fullName.split(" ").slice(1).join(" ") || "Member";
+
     const payload = {
+      user_id: inputData.user_id || inputData.studentId || studentId,
+      studentId: inputData.user_id || inputData.studentId || studentId,
+      first_name: first_name,
+      last_name: last_name,
       name: fullName,
       fullName: fullName,
-      studentId: studentId,
       email: email,
       password: password,
       role: role,
-      department: inputData.department || "CS",
-      semester: inputData.semester || "Semester 1",
-      designation: inputData.designation || "",
-      phoneNumber: inputData.phoneNumber || inputData.phone || "",
-      status: "Active",
-      registeredDate: new Date().toISOString().split("T")[0],
+      status: (inputData.status || "active").toLowerCase(),
+      joined_date: new Date().toISOString().split("T")[0],
     };
 
     try {
@@ -173,6 +175,7 @@ export const useMemberHook = () => {
       try {
         const res = await api.post("/member", payload);
         newStudent = res.data?.member || res.data || { id: Date.now(), ...payload };
+        await fetchDashboardData();
       } catch (err) {
         console.warn("Backend API POST /member fallback:", err?.message);
         newStudent = { id: Date.now(), ...payload };
@@ -197,9 +200,33 @@ export const useMemberHook = () => {
     }
   };
 
-  const handleDeleteStudent = (id) => {
-    if (window.confirm("Are you sure you want to remove this user?")) {
+  const handleDeleteStudent = async (id) => {
+    if (window.confirm("Are you sure you want to remove this member from database?")) {
+      try {
+        await api.delete(`/member/${id}`);
+      } catch (err) {
+        console.warn("API DELETE /member failed:", err?.message);
+      }
       setStudents((prev) => prev.filter((s) => s.id !== id));
+      const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
+      const updated = registeredUsers.filter((u) => u.id !== id && u.studentId !== id);
+      localStorage.setItem("registered_users", JSON.stringify(updated));
+    }
+  };
+
+  const handleUpdateStudent = async (id, updatedData) => {
+    try {
+      const res = await api.put(`/member/${id}`, updatedData);
+      const updatedMember = res.data?.member || res.data || updatedData;
+      setStudents((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, ...updatedMember } : s))
+      );
+      return updatedMember;
+    } catch (err) {
+      console.warn("API PUT /member failed:", err?.message);
+      setStudents((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, ...updatedData } : s))
+      );
     }
   };
 
@@ -239,6 +266,7 @@ export const useMemberHook = () => {
     studentErrors,
     handleAddStudentSubmit,
     handleDeleteStudent,
+    handleUpdateStudent,
     refreshDashboard: fetchDashboardData,
   };
 };

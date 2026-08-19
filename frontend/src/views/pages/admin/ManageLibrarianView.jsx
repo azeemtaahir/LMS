@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLibrarianController } from "../../../hooks/useLibrarianHook";
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, UserPlus, X } from "lucide-react";
+import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import RegisterLibrarianView from "./RegisterLibrarianView";
 
 export default function ManageLibrarianView() {
@@ -14,8 +14,6 @@ export default function ManageLibrarianView() {
     librarians,
     searchQuery,
     setSearchQuery,
-    selectedShift,
-    setSelectedShift,
     handleUpdateLibrarian,
     handleDeleteLibrarian,
   } = useLibrarianController();
@@ -93,56 +91,16 @@ export default function ManageLibrarianView() {
         </div>
       ) : (
         <>
-          {/* Filter and Search Bar */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 rounded-xl border border-indigo-900/40 shadow-xl flex flex-col md:flex-row gap-3 items-center justify-between text-white">
-            {/* Search Input */}
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-2.5 text-indigo-300/70" size={16} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search librarians..."
-                className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-indigo-500/30 bg-slate-900/80 text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition"
-              />
-            </div>
-
-            {/* Shift Filter & Register Button */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-semibold text-indigo-200">Shift:</label>
-                <select
-                  value={selectedShift}
-                  onChange={(e) => setSelectedShift(e.target.value)}
-                  className="px-3 py-2 text-xs rounded-lg border border-indigo-500/30 bg-slate-900/80 text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition cursor-pointer"
-                >
-                  <option value="All" className="bg-slate-900 text-white">All Shifts</option>
-                  <option value="Morning" className="bg-slate-900 text-white">Morning</option>
-                  <option value="Evening" className="bg-slate-900 text-white">Evening</option>
-                  <option value="Night" className="bg-slate-900 text-white">Night</option>
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenRegisterForm}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/30 transition cursor-pointer"
-              >
-                <UserPlus size={15} />
-                <span>Register Librarian</span>
-              </button>
-            </div>
-          </div>
+          {/* Librarians Table */}
 
           {/* Librarians Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
+                <thead className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 font-semibold uppercase tracking-wider text-[11px] border-b border-indigo-950">
                   <tr>
                     <th className="py-3.5 px-4">Librarian ID</th>
                     <th className="py-3.5 px-4">Name</th>
-                    <th className="py-3.5 px-4">Shift</th>
                     <th className="py-3.5 px-4">Contact Details</th>
                     <th className="py-3.5 px-4">Status</th>
                     <th className="py-3.5 px-4 text-center">Actions</th>
@@ -151,7 +109,7 @@ export default function ManageLibrarianView() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {currentLibrarians.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="py-8 text-center text-slate-400">
+                      <td colSpan="5" className="py-8 text-center text-slate-400">
                         No librarians found matching your criteria.
                       </td>
                     </tr>
@@ -160,11 +118,6 @@ export default function ManageLibrarianView() {
                       <tr key={lib.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4 font-bold text-slate-900">{lib.librarianId || `LIB-${lib.id}`}</td>
                         <td className="py-3 px-4 font-semibold text-slate-800">{lib.name}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-semibold border border-slate-200">
-                            {lib.shift || "Morning"}
-                          </span>
-                        </td>
                         <td className="py-3 px-4 text-slate-600">
                           <div>{lib.email}</div>
                           <div className="text-[11px] text-slate-400">{lib.phone}</div>
@@ -285,10 +238,6 @@ export default function ManageLibrarianView() {
                 <span className="text-slate-700">{viewingLibrarian.phone || "N/A"}</span>
               </div>
               <div>
-                <span className="text-slate-400 font-medium block">Assigned Shift:</span>
-                <span className="font-bold text-indigo-600">{viewingLibrarian.shift || "Morning"}</span>
-              </div>
-              <div>
                 <span className="text-slate-400 font-medium block">Status:</span>
                 <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${viewingLibrarian.status === "Active" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>
                   {viewingLibrarian.status || "Active"}
@@ -354,31 +303,17 @@ export default function ManageLibrarianView() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Shift</label>
-                  <select
-                    value={editFormData.shift}
-                    onChange={(e) => setEditFormData({ ...editFormData, shift: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="Morning">Morning</option>
-                    <option value="Evening">Evening</option>
-                    <option value="Night">Night</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Status</label>
-                  <select
-                    value={editFormData.status}
-                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Status</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="disabled">Disabled</option>
+                  <option value="locked">Locked</option>
+                </select>
               </div>
 
               <div className="pt-3 flex justify-end gap-2">

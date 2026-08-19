@@ -18,6 +18,7 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
     phone: "",
     shift: "Morning",
     accessLevel: "Standard Librarian",
+    status: "active",
     joinedDate: new Date().toISOString().split("T")[0],
   });
 
@@ -26,7 +27,7 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!formData.librarianId || !formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
       alert("Please fill in all required fields.");
@@ -36,15 +37,19 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
       alert("Passwords do not match. Please check and try again.");
       return;
     }
-    handleAddLibrarian({
-      ...formData,
-      name: formData.fullName,
-    });
-    alert(`Librarian ${formData.fullName} registered successfully!`);
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      navigate("/admin/librarians/manage");
+    try {
+      await handleAddLibrarian({
+        ...formData,
+        name: formData.fullName,
+      });
+      alert(`Librarian ${formData.fullName} registered successfully!`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate("/admin/librarians/manage");
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || "Failed to register librarian");
     }
   };
 
@@ -121,18 +126,18 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
               />
             </div>
 
-            {/* Shift Duty */}
+            {/* Account Status */}
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Shift Schedule</label>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">Account Status</label>
               <select
-                name="shift"
-                value={formData.shift}
+                name="status"
+                value={formData.status}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition font-medium text-stone-800"
               >
-                <option value="Morning">Morning Shift (8 AM - 4 PM)</option>
-                <option value="Evening">Evening Shift (4 PM - 11 PM)</option>
-                <option value="Night">Night Shift (11 PM - 8 AM)</option>
+                <option value="active">Active</option>
+                <option value="disabled">Disabled</option>
+                <option value="locked">Locked</option>
               </select>
             </div>
           </div>
@@ -150,6 +155,23 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
                 placeholder="+92 (310) 0000000"
                 className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
               />
+            </div>
+
+            {/* Access Role */}
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                <ShieldCheck size={14} className="text-indigo-600" />
+                Access Permission Level
+              </label>
+              <select
+                name="accessLevel"
+                value={formData.accessLevel}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition font-medium text-stone-800"
+              >
+                <option value="Standard Librarian">Standard Librarian (Manage Books & Transactions)</option>
+                <option value="Senior Administrator">Senior Administrator (Full Management)</option>
+              </select>
             </div>
 
             {/* Password */}
@@ -196,23 +218,6 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
                   {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-            </div>
-
-            {/* Access Role */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <ShieldCheck size={14} className="text-indigo-600" />
-                Access Permission Level
-              </label>
-              <select
-                name="accessLevel"
-                value={formData.accessLevel}
-                onChange={handleChange}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition font-medium text-stone-800"
-              >
-                <option value="Standard Librarian">Standard Librarian (Manage Books & Transactions)</option>
-                <option value="Senior Administrator">Senior Administrator (Full Management)</option>
-              </select>
             </div>
           </div>
         </div>

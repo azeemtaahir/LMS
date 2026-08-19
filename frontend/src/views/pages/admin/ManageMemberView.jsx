@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMemberController } from "../../../hooks/useMemberHook";
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, GraduationCap, UserCheck, UserPlus } from "lucide-react";
+import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import RegisterUsersView from "./RegisterMemberView";
 
 export default function ManageUsersView() {
@@ -19,6 +19,7 @@ export default function ManageUsersView() {
     selectedRole,
     setSelectedRole,
     handleDeleteStudent,
+    handleUpdateStudent,
   } = useMemberController();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,11 +31,41 @@ export default function ManageUsersView() {
     validCurrentPage * ITEMS_PER_PAGE
   );
 
-  const handleOpenRegisterForm = () => {
-    setSearchParams((prev) => {
-      prev.set("register", "true");
-      return prev;
+  // View Details Modal State
+  const [viewMember, setViewMember] = useState(null);
+
+  // Edit User Modal State
+  const [editMember, setEditMember] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    role: "Student",
+    status: "active",
+  });
+
+  const handleOpenEdit = (member) => {
+    setEditMember(member);
+    const names = (member.name || "").split(" ");
+    setEditFormData({
+      first_name: member.first_name || names[0] || "",
+      last_name: member.last_name || names.slice(1).join(" ") || "",
+      email: member.email || "",
+      role: member.role || "Student",
+      status: (member.status || "active").toLowerCase(),
     });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editMember) return;
+    const fullName = `${editFormData.first_name} ${editFormData.last_name}`.trim();
+    await handleUpdateStudent(editMember.id, {
+      ...editFormData,
+      name: fullName,
+      fullName,
+    });
+    setEditMember(null);
   };
 
   const handleCloseRegisterForm = () => {
@@ -56,72 +87,19 @@ export default function ManageUsersView() {
         </div>
       ) : (
         <>
-          {/* Filter and Search Bar */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 rounded-xl border border-indigo-900/40 shadow-xl flex flex-col md:flex-row gap-3 items-center justify-between text-white">
-            {/* Search Input */}
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-2.5 text-indigo-300/70" size={16} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users (Student or Teacher)..."
-                className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-indigo-500/30 bg-slate-900/80 text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition"
-              />
-            </div>
-
-            {/* Filters: Role & Department + Register Action */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-semibold text-indigo-200">Role:</label>
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  className="px-3 py-2 text-xs rounded-lg border border-indigo-500/30 bg-slate-900/80 text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition cursor-pointer"
-                >
-                  <option value="All" className="bg-slate-900 text-white">All Roles</option>
-                  <option value="Student" className="bg-slate-900 text-white">Student</option>
-                  <option value="Teacher" className="bg-slate-900 text-white">Teacher</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-semibold text-indigo-200">Dept:</label>
-                <select
-                  value={selectedDept}
-                  onChange={(e) => setSelectedDept(e.target.value)}
-                  className="px-3 py-2 text-xs rounded-lg border border-indigo-500/30 bg-slate-900/80 text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition cursor-pointer"
-                >
-                  <option value="All" className="bg-slate-900 text-white">All Depts</option>
-                  <option value="CS" className="bg-slate-900 text-white">Computer Science</option>
-                  <option value="EE" className="bg-slate-900 text-white">Electrical Eng</option>
-                  <option value="BBA" className="bg-slate-900 text-white">Business Admin</option>
-                  <option value="ME" className="bg-slate-900 text-white">Mechanical Eng</option>
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenRegisterForm}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/30 transition cursor-pointer"
-              >
-                <UserPlus size={15} />
-                <span>Register User</span>
-              </button>
-            </div>
-          </div>
+          {/* Members Table */}
 
           {/* Members Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
+                <thead className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 font-semibold uppercase tracking-wider text-[11px] border-b border-indigo-950">
                   <tr>
-                    <th className="py-3.5 px-4">User Details</th>
-                    <th className="py-3.5 px-4">ID Number</th>
+                    <th className="py-3.5 px-4">User ID</th>
+                    <th className="py-3.5 px-4">Name</th>
+                    <th className="py-3.5 px-4">Email</th>
                     <th className="py-3.5 px-4">Role</th>
-                    <th className="py-3.5 px-4">Department / Semester</th>
-                    <th className="py-3.5 px-4">Registered Date</th>
+                    <th className="py-3.5 px-4">Status</th>
                     <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -135,36 +113,38 @@ export default function ManageUsersView() {
                   ) : (
                     currentStudents.map((s) => (
                       <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 font-bold text-slate-900">{s.studentId || `MEM-${s.id}`}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-800">{s.name}</td>
+                        <td className="py-3 px-4 text-slate-600">{s.email}</td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-800">{s.name}</div>
-                          <div className="text-[11px] text-slate-400">{s.email}</div>
-                        </td>
-                        <td className="py-3 px-4 font-bold text-slate-900">{s.studentId}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                              s.role === "Teacher"
-                                ? "bg-purple-100 text-purple-800 border border-purple-200"
-                                : "bg-blue-100 text-blue-800 border border-blue-200"
-                            }`}
-                          >
-                            {s.role === "Teacher" ? <UserCheck size={12} /> : <GraduationCap size={12} />}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                             {s.role || "Student"}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">
-                          {s.department} {s.semester ? `• ${s.semester}` : s.designation ? `• ${s.designation}` : ""}
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              (s.status || "active").toLowerCase() === "active"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : (s.status || "active").toLowerCase() === "suspended"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {s.status || "Active"}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-500">{s.registeredDate || "N/A"}</td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
+                              onClick={() => setViewMember(s)}
                               title="View Details"
                               className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
                             >
                               <Eye size={15} />
                             </button>
                             <button
+                              onClick={() => handleOpenEdit(s)}
                               title="Edit User"
                               className="p-1.5 text-indigo-600 hover:text-indigo-900 rounded-md hover:bg-indigo-50 transition cursor-pointer"
                             >
@@ -186,7 +166,7 @@ export default function ManageUsersView() {
               </table>
             </div>
 
-            {/* Dynamic Pagination Footer - Only rendered when totalPages > 1 */}
+            {/* Dynamic Pagination Footer */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
                 <span className="text-slate-500 font-medium">
@@ -225,6 +205,145 @@ export default function ManageUsersView() {
               </div>
             )}
           </div>
+
+          {/* VIEW DETAILS MODAL */}
+          {viewMember && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="font-bold text-slate-800 text-base">User Details</h3>
+                  <button
+                    onClick={() => setViewMember(null)}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <span className="font-semibold text-slate-500 block">User ID:</span>
+                    <span className="font-bold text-slate-800 text-sm">{viewMember.studentId || `MEM-${viewMember.id}`}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500 block">Full Name:</span>
+                    <span className="text-slate-800 font-medium">{viewMember.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500 block">Email Address:</span>
+                    <span className="text-slate-800 font-medium">{viewMember.email}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500 block">Role:</span>
+                    <span className="text-indigo-600 font-bold">{viewMember.role || "Student"}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500 block">Account Status:</span>
+                    <span className="capitalize font-bold text-slate-800">{viewMember.status || "active"}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500 block">Joined Date:</span>
+                    <span className="text-slate-700">{viewMember.registeredDate || "N/A"}</span>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex justify-end">
+                  <button
+                    onClick={() => setViewMember(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* EDIT USER MODAL */}
+          {editMember && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <form onSubmit={handleSaveEdit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="font-bold text-slate-800 text-base">Edit User</h3>
+                  <button
+                    type="button"
+                    onClick={() => setEditMember(null)}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      value={editFormData.first_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, first_name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={editFormData.last_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, last_name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Role</label>
+                    <select
+                      value={editFormData.role}
+                      onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    >
+                      <option value="Student">Student</option>
+                      <option value="Teacher">Teacher</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Account Status</label>
+                    <select
+                      value={editFormData.status}
+                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    >
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditMember(null)}
+                    className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-600 font-semibold rounded-xl text-xs transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition shadow-sm cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </>
       )}
     </div>

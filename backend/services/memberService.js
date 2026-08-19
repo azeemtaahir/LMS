@@ -12,31 +12,41 @@ export const memberService = {
   },
 
   async createMember(memberData) {
-    const name = memberData.fullName || memberData.name || `${memberData.first_name || ''} ${memberData.last_name || ''}`.trim() || 'New User';
-    const parts = name.split(' ');
+    const fullName = memberData.fullName || memberData.name || `${memberData.first_name || ''} ${memberData.last_name || ''}`.trim() || 'New User';
+    const parts = fullName.split(' ');
     const first_name = memberData.first_name || parts[0] || 'User';
-    const last_name = memberData.last_name || parts.slice(1).join(' ') || 'User';
-    const safeStatus = memberData.status || 'active';
+    const last_name = memberData.last_name || parts.slice(1).join(' ') || 'Member';
+    const rawStatus = (memberData.status || 'active').toLowerCase();
+    const ALLOWED_STATUSES = ['active', 'suspended', 'inactive'];
+    const safeStatus = ALLOWED_STATUSES.includes(rawStatus) ? rawStatus : 'active';
+    const userId = memberData.user_id || memberData.studentId || (memberData.email ? memberData.email.split('@')[0] : `MEM-${Date.now().toString().slice(-4)}`);
+    const passwordHash = memberData.password ? await bcrypt.hash(memberData.password, 10) : await bcrypt.hash('123456', 10);
+    const joined_date = memberData.joined_date || memberData.registeredDate || new Date().toISOString().split('T')[0];
 
-    // 1. Insert into PostgreSQL member table
+    // 1. Insert into PostgreSQL member table according to ER Diagram
     const newMember = await MemberModel.create({
+      user_id: userId,
       first_name,
       last_name,
-      joined_date: memberData.joined_date || new Date().toISOString().split('T')[0],
+      email: memberData.email,
+      role: memberData.role || 'Student',
+      password_hash: passwordHash,
+      joined_date,
       status: safeStatus,
     });
 
-    // 2. Insert into PostgreSQL users table so user can authenticate
+    // 2. Insert into PostgreSQL users table linking member_id
     if (memberData.email) {
       try {
-        const passwordHash = memberData.password ? await bcrypt.hash(memberData.password, 10) : await bcrypt.hash('123456', 10);
+        const username = memberData.username || userId;
+
         await UserModel.create({
           member_id: newMember?.id || null,
-          username: memberData.email.split('@')[0],
+          username: username,
           password_hash: passwordHash,
           email: memberData.email,
           status: safeStatus,
-          name: name,
+          name: fullName,
         });
       } catch (userErr) {
         console.warn('User account creation in users table:', userErr.message);

@@ -38,6 +38,7 @@ export default function Navbar({ onToggleSidebar }) {
   const isBooksPage = location.pathname.includes("/admin/books");
   const isUsersPage = location.pathname.includes("/admin/users") || location.pathname.includes("/admin/students");
   const isLibrariansPage = location.pathname.includes("/admin/librarians");
+  const isIssuedBooksPage = location.pathname.includes("/admin/transactions/issued") || location.pathname.includes("/transactions/issued");
 
   const isAddBookOpen = searchParams.get("add") === "true";
   const isRegisterUserOpen = searchParams.get("register") === "true";
@@ -126,7 +127,15 @@ export default function Navbar({ onToggleSidebar }) {
             value={currentSearch}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Search books, members..."
+            placeholder={
+              isUsersPage
+                ? "Search User..."
+                : isBooksPage
+                ? "Search Books..."
+                : isLibrariansPage
+                ? "Search Librarians..."
+                : "Search..."
+            }
             className="w-full pl-8 pr-3 sm:pr-10 py-1.5 text-xs bg-slate-100/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white text-slate-800 placeholder-slate-400 transition-all"
           />
           <kbd className="hidden sm:inline-flex absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-slate-200/60 rounded border border-slate-300/60 pointer-events-none">
@@ -138,51 +147,174 @@ export default function Navbar({ onToggleSidebar }) {
       {/* User profile / notifications / Header action buttons */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {isBooksPage && (
-          <button
-            onClick={handleToggleAddBook}
-            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
-              isAddBookOpen
-                ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
-            }`}
-          >
-            {isAddBookOpen ? <X size={15} /> : <PlusCircle size={15} />}
-            <span className="hidden sm:inline">{isAddBookOpen ? "Close Form" : "Add New Book"}</span>
-          </button>
+          <>
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700">
+              <span className="font-semibold text-slate-500 text-xs">Category:</span>
+              <select
+                value={searchParams.get("category") || "All"}
+                onChange={(e) => {
+                  const newParams = new URLSearchParams(searchParams);
+                  if (e.target.value && e.target.value !== "All") {
+                    newParams.set("category", e.target.value);
+                  } else {
+                    newParams.delete("category");
+                  }
+                  setSearchParams(newParams, { replace: true });
+                }}
+                className="bg-transparent font-semibold text-xs focus:outline-none cursor-pointer text-slate-800 max-w-[75px] truncate"
+              >
+                <option value="All">All</option>
+                <option value="Fiction">Fiction</option>
+                <option value="Non-Fiction">Non-Fiction</option>
+                <option value="Self Help">Self Help</option>
+                <option value="Finance">Finance</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Science & Technology">Science & Technology</option>
+                <option value="History">History</option>
+                <option value="Biography & Memoir">Biography & Memoir</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700">
+              <span className="font-semibold text-slate-500 text-xs">Status:</span>
+              <select
+                value={searchParams.get("status") || "All"}
+                onChange={(e) => {
+                  const newParams = new URLSearchParams(searchParams);
+                  if (e.target.value && e.target.value !== "All") {
+                    newParams.set("status", e.target.value);
+                  } else {
+                    newParams.delete("status");
+                  }
+                  setSearchParams(newParams, { replace: true });
+                }}
+                className="bg-transparent font-semibold text-xs focus:outline-none cursor-pointer text-slate-800 max-w-[75px] truncate"
+              >
+                <option value="All">All</option>
+                <option value="Available">Available</option>
+                <option value="Issued">Issued</option>
+                <option value="Overdue">Overdue</option>
+              </select>
+            </div>
+
+            <button
+              onClick={handleToggleAddBook}
+              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
+                isAddBookOpen
+                  ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
+              }`}
+            >
+              {isAddBookOpen ? <X size={15} /> : <PlusCircle size={15} />}
+              <span className="hidden sm:inline">{isAddBookOpen ? "Close Form" : "Add New Book"}</span>
+            </button>
+          </>
         )}
 
         {isUsersPage && (
-          <button
-            onClick={handleToggleRegisterUser}
-            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
-              isRegisterUserOpen
-                ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
-            }`}
-          >
-            {isRegisterUserOpen ? <X size={15} /> : <UserPlus size={15} />}
-            <span className="hidden sm:inline">{isRegisterUserOpen ? "Close Form" : "Register User"}</span>
-          </button>
+          <>
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700">
+              <span className="font-semibold text-slate-500 text-xs">Role:</span>
+              <select
+                value={searchParams.get("role") || "All"}
+                onChange={(e) => {
+                  const newParams = new URLSearchParams(searchParams);
+                  if (e.target.value && e.target.value !== "All") {
+                    newParams.set("role", e.target.value);
+                  } else {
+                    newParams.delete("role");
+                  }
+                  setSearchParams(newParams, { replace: true });
+                }}
+                className="bg-transparent font-semibold text-xs focus:outline-none cursor-pointer text-slate-800 max-w-[75px] truncate"
+              >
+                <option value="All">All Roles</option>
+                <option value="Student">Student</option>
+                <option value="Teacher">Teacher</option>
+              </select>
+            </div>
+
+            <button
+              onClick={handleToggleRegisterUser}
+              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
+                isRegisterUserOpen
+                  ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
+              }`}
+            >
+              {isRegisterUserOpen ? <X size={15} /> : <UserPlus size={15} />}
+              <span className="hidden sm:inline">{isRegisterUserOpen ? "Close Form" : "Register User"}</span>
+            </button>
+          </>
         )}
 
         {isLibrariansPage && (
-          <button
-            onClick={handleToggleRegisterLibrarian}
-            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
-              isRegisterLibrarianOpen
-                ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
-            }`}
-          >
-            {isRegisterLibrarianOpen ? <X size={15} /> : <UserPlus size={15} />}
-            <span className="hidden sm:inline">{isRegisterLibrarianOpen ? "Close Form" : "Register Librarian"}</span>
-          </button>
+          <>
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700">
+              <span className="font-semibold text-slate-500 text-xs">Status:</span>
+              <select
+                value={searchParams.get("status") || "All"}
+                onChange={(e) => {
+                  const newParams = new URLSearchParams(searchParams);
+                  if (e.target.value && e.target.value !== "All") {
+                    newParams.set("status", e.target.value);
+                  } else {
+                    newParams.delete("status");
+                  }
+                  setSearchParams(newParams, { replace: true });
+                }}
+                className="bg-transparent font-semibold text-xs focus:outline-none cursor-pointer text-slate-800 max-w-[75px] truncate"
+              >
+                <option value="All">All</option>
+                <option value="Active">Active</option>
+                <option value="Disabled">Disabled</option>
+                <option value="Locked">Locked</option>
+              </select>
+            </div>
+
+            <button
+              onClick={handleToggleRegisterLibrarian}
+              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
+                isRegisterLibrarianOpen
+                  ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
+              }`}
+            >
+              {isRegisterLibrarianOpen ? <X size={15} /> : <UserPlus size={15} />}
+            </button>
+          </>
         )}
 
-        <button className="relative p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white" />
-        </button>
+        {isIssuedBooksPage && (
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700">
+            <span className="font-semibold text-slate-500 text-xs">Status:</span>
+            <select
+              value={searchParams.get("status") || "All"}
+              onChange={(e) => {
+                const newParams = new URLSearchParams(searchParams);
+                if (e.target.value && e.target.value !== "All") {
+                  newParams.set("status", e.target.value);
+                } else {
+                  newParams.delete("status");
+                }
+                setSearchParams(newParams, { replace: true });
+              }}
+              className="bg-transparent font-semibold text-xs focus:outline-none cursor-pointer text-slate-800 max-w-[75px] truncate"
+            >
+              <option value="All">All</option>
+              <option value="Issued">Issued</option>
+              <option value="Returned">Returned</option>
+              <option value="Overdue">Overdue</option>
+            </select>
+          </div>
+        )}
+
+        {!isUsersPage && !isBooksPage && !isLibrariansPage && !isIssuedBooksPage && (
+          <button className="relative p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+            <Bell size={18} />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white" />
+          </button>
+        )}
 
         <div className="flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-3 border-l border-slate-200">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-indigo-600/20 shrink-0">

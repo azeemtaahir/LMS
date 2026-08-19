@@ -65,9 +65,9 @@ export const useAuthHook = () => {
 
         if (foundRegistered) {
           const regStatusLower = foundRegistered.status ? String(foundRegistered.status).toLowerCase() : "active";
-          if (regStatusLower === "inactive" || regStatusLower === "pending") {
-            const statusErr = new Error("Your account is inactive or pending approval by an admin.");
-            statusErr.response = { data: { message: "Your account is inactive or pending approval by an admin." } };
+          if (regStatusLower === "suspended" || regStatusLower === "inactive" || regStatusLower === "disabled") {
+            const statusErr = new Error(`Your account status is ${foundRegistered.status}. Access denied.`);
+            statusErr.response = { data: { message: `Your account status is ${foundRegistered.status}. Access denied.` } };
             throw statusErr;
           }
           data = {
@@ -75,52 +75,51 @@ export const useAuthHook = () => {
             user: {
               id: Date.now(),
               email: foundRegistered.email,
-              name: foundRegistered.name,
-              role: foundRegistered.role || "Librarian",
-              studentId: foundRegistered.studentId || "LIB-101",
-              department: "Library Staff",
+              name: foundRegistered.name || foundRegistered.fullName || "User",
+              role: foundRegistered.role || "Student",
+              studentId: foundRegistered.studentId || foundRegistered.user_id || "MEM-101",
               status: foundRegistered.status || "Active",
             },
           };
-        } else {
-          let role = "Admin";
-          let name = "";
-          const emailPrefix = formData.email ? formData.email.split("@")[0] : "User";
-          const formattedName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-          if (emailLower.includes("librarian")) {
-            role = "Librarian";
-            name = formattedName || "Librarian";
-          } else if (emailLower.includes("teacher") || emailLower.includes("faculty")) {
-            role = "Teacher";
-            name = formattedName || "Teacher";
-          } else if (emailLower.includes("student") || emailLower.includes("member")) {
-            role = "Student";
-            name = formattedName || "Student";
-          } else {
-            role = "Admin";
-            name = formattedName || "Admin";
-          }
+        } else if (emailLower.includes("admin")) {
           data = {
             token: "mock-jwt-token-12345",
             user: {
-              id: Date.now(),
+              id: 1,
               email: formData.email,
-              name,
-              role,
-              studentId: "",
-              department: "",
+              name: "System Admin",
+              role: "Admin",
               status: "Active",
             },
           };
+        } else if (emailLower.includes("librarian")) {
+          data = {
+            token: "mock-jwt-token-12345",
+            user: {
+              id: 2,
+              email: formData.email,
+              name: "Librarian Staff",
+              role: "Librarian",
+              status: "Active",
+            },
+          };
+        } else {
+          // Reject unregistered users
+          const unregErr = new Error("Access denied. Only registered members are allowed to log in.");
+          unregErr.response = { data: { message: "Access denied. Only registered members are allowed to log in." } };
+          throw unregErr;
         }
       }
 
-      const userObj = data.user || { email: formData.email, name: "Admin", role: "Admin", status: "Active" };
+      const userObj = data.user;
+      if (!userObj) {
+        throw new Error("Invalid email or password");
+      }
 
       const userStatusLower = userObj.status ? String(userObj.status).toLowerCase() : "active";
-      if (userStatusLower === "inactive" || userStatusLower === "pending") {
-        const statusErr = new Error("Your account is inactive or pending approval by an admin.");
-        statusErr.response = { data: { message: "Your account is inactive or pending approval by an admin." } };
+      if (userStatusLower === "suspended" || userStatusLower === "inactive" || userStatusLower === "disabled") {
+        const statusErr = new Error(`Your account status is ${userObj.status}. Access denied.`);
+        statusErr.response = { data: { message: `Your account status is ${userObj.status}. Access denied.` } };
         throw statusErr;
       }
 

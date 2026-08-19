@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../api/api";
 
-const MOCK_LIBRARIANS = [];
-
 export const useLibrarianHook = () => {
   const [searchParams] = useSearchParams();
   const [librarians, setLibrarians] = useState([]);
@@ -15,6 +13,14 @@ export const useLibrarianHook = () => {
     setPrevSearchParam(searchParamQuery);
     setSearchQuery(searchParamQuery);
   }
+  const statusParam = searchParams.get("status") || "All";
+  const [selectedStatus, setSelectedStatus] = useState(statusParam);
+  const [prevStatusParam, setPrevStatusParam] = useState(statusParam);
+
+  if (prevStatusParam !== statusParam) {
+    setPrevStatusParam(statusParam);
+    setSelectedStatus(statusParam);
+  }
   const [selectedShift, setSelectedShift] = useState("All");
   const [loading, setLoading] = useState(false);
 
@@ -24,9 +30,12 @@ export const useLibrarianHook = () => {
       const response = await api.get("/librarians");
       if (Array.isArray(response.data)) {
         setLibrarians(response.data);
+      } else {
+        setLibrarians([]);
       }
-    } catch {
-      setLibrarians(MOCK_LIBRARIANS);
+    } catch (err) {
+      console.error("Error fetching librarians from database:", err);
+      setLibrarians([]);
     } finally {
       setLoading(false);
     }
@@ -36,14 +45,18 @@ export const useLibrarianHook = () => {
     let ignore = false;
 
     async function initFetch() {
+      setLoading(true);
       try {
         const response = await api.get("/librarians");
         if (ignore) return;
         if (Array.isArray(response.data)) {
           setLibrarians(response.data);
+        } else {
+          setLibrarians([]);
         }
-      } catch {
-        if (!ignore) setLibrarians(MOCK_LIBRARIANS);
+      } catch (err) {
+        console.error("Error fetching librarians from database:", err);
+        if (!ignore) setLibrarians([]);
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -57,47 +70,16 @@ export const useLibrarianHook = () => {
   }, []);
 
   const handleAddLibrarian = async (librarianData) => {
-    // 1. Create authentication login credentials in backend / local storage
-    const email = librarianData.email;
-    const password = librarianData.password;
-    const name = librarianData.fullName || librarianData.name;
-
-    try {
-      await api.post("/auth/signup", {
-        email,
-        password,
-        name,
-        role: "librarian",
-      });
-    } catch (err) {
-      console.warn("Librarian auth signup info:", err?.response?.data?.message || err.message);
-    }
-
     try {
       const response = await api.post("/librarians", librarianData);
-      setLibrarians((prev) => [...prev, response.data]);
-    } catch {
-      const newLibrarian = {
-        id: Date.now(),
-        ...librarianData,
-        name,
-        status: "Active"
-      };
-      setLibrarians((prev) => [...prev, newLibrarian]);
+      const created = response.data?.librarian || response.data;
+      await fetchLibrarians();
+      return created;
+    } catch (err) {
+      console.error("Error registering librarian in database:", err);
+      const errorMessage = err.response?.data?.message || err.message || "Error registering librarian";
+      throw new Error(errorMessage);
     }
-
-    // Save to registered_users in local storage for local testing fallback
-    const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
-    const updatedUsers = registeredUsers.filter((u) => u.email.toLowerCase() !== email.toLowerCase());
-    updatedUsers.push({
-      email,
-      password,
-      name,
-      role: "Librarian",
-      studentId: librarianData.librarianId || "LIB-101",
-      status: "Active",
-    });
-    localStorage.setItem("registered_users", JSON.stringify(updatedUsers));
   };
 
   const handleDeleteLibrarian = (id) => {
@@ -122,8 +104,10 @@ export const useLibrarianHook = () => {
       l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (l.librarianId && l.librarianId.toLowerCase().includes(searchQuery.toLowerCase())) ||
       l.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesShift = selectedShift === "All" || l.shift === selectedShift;
-    return matchesSearch && matchesShift;
+    const matchesStatus =
+      selectedStatus === "All" ||
+      (l.status || "Active").toLowerCase() === selectedStatus.toLowerCase();
+    return matchesSearch && matchesStatus;
   });
 
   return {

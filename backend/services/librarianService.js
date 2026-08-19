@@ -21,11 +21,20 @@ export const librarianService = {
   async getAllLibrarians() {
     try {
       const result = await lms.query(`
-        SELECT u.id, u.member_id AS "librarianId", u.name, u.email, u.status, u.created_at AS "joinedDate"
+        SELECT 
+          u.id, 
+          COALESCE(CAST(u.member_id AS VARCHAR), u.username, CONCAT('LIB-', u.id)) AS "librarianId", 
+          u.name, 
+          u.email, 
+          COALESCE(u.phone, '') AS "phone", 
+          u.status, 
+          u.created_at AS "joinedDate"
         FROM users u
         LEFT JOIN user_roles ur ON u.id = ur.user_id
         LEFT JOIN roles r ON ur.role_id = r.id
-        WHERE LOWER(r.role_name) = 'librarian' OR u.email LIKE '%librarian%'
+        WHERE LOWER(r.role_name) IN ('librarian', 'admin') 
+           OR u.email ILIKE '%librarian%' 
+           OR u.username ILIKE '%librarian%'
         ORDER BY u.id ASC
       `);
       return result.rows;
@@ -40,7 +49,8 @@ export const librarianService = {
     const password = data.password || "librarian123";
     const name = data.fullName || data.name || email.split("@")[0];
     const librarianId = data.librarianId || data.member_id || `LIB-${Date.now().toString().slice(-4)}`;
-    const username = email.split("@")[0];
+    const username = data.username || librarianId || `${email.split("@")[0]}_${Date.now().toString().slice(-4)}`;
+    const phone = data.phone || data.phonenumber || "";
 
     if (!email) {
       const err = new Error("Librarian email is required");
@@ -59,14 +69,30 @@ export const librarianService = {
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
-    const userRes = await lms.query(
-      `INSERT INTO users (member_id, username, email, password_hash, name, status)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, member_id AS "librarianId", username, email, name, status, created_at AS "joinedDate"`,
-      [librarianId, username, email, password_hash, name, 'active']
-    );
+    const status = data.status || 'active';
 
-    const newLibrarian = userRes.rows[0];
+    let userRes;
+    try {
+      userRes = await lms.query(
+        `INSERT INTO users (member_id, username, email, password_hash, name, phone, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, member_id, username, email, name, phone, status, created_at AS "joinedDate"`,
+        [librarianId, username, email, password_hash, name, phone, status]
+      );
+    } catch (dbErr) {
+      // Fallback if 'phone' or 'member_id' column structure differs
+      userRes = await lms.query(
+        `INSERT INTO users (username, email, password_hash, name, status)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, username, email, name, status, created_at AS "joinedDate"`,
+        [username, email, password_hash, name, status]
+      );
+    }
+
+    const newLibrarian = {
+      ...userRes.rows[0],
+      librarianId: librarianId,
+    };
 
     // Assign Librarian Role
     const roleId = await this.ensureLibrarianRole();
@@ -85,8 +111,27 @@ export const librarianService = {
       ...newLibrarian,
       shift: data.shift || "Morning",
       accessLevel: data.accessLevel || "Standard Librarian",
-      phone: data.phone || "",
     };
+  },
+
+  async updateLibrarian(id, data) {
+    const name = data.name || data.fullName;
+    const email = data.email;
+    const phone = data.phone || data.phonenumber;
+    const status = data.status || 'active';
+
+    const result = await lms.query(
+      `UPDATE users
+       SET name = COALESCE($1, name),
+           email = COALESCE($2, email),
+           phonenumber = COALESCE($3, phonenumber),
+           phone = COALESCE($3, phone),
+           status = COALESCE($4, status)
+       WHERE id = $5
+       RETURNING id, username AS "librarianId", email, name, COALESCE(phonenumber, phone) AS "phone", status, created_at AS "joinedDate"`,
+      [name, email, phone, status, id]
+    );
+    return result.rows[0] || null;
   },
 
   async deleteLibrarian(id) {

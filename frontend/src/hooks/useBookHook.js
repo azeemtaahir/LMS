@@ -108,7 +108,14 @@ export const useBookHook = () => {
     setPrevSearchParam(searchParamQuery);
     setSearchQuery(searchParamQuery);
   }
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const categoryParam = searchParams.get("category") || "All";
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+
+  if (prevCategoryParam !== categoryParam) {
+    setPrevCategoryParam(categoryParam);
+    setSelectedCategory(categoryParam);
+  }
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categorySearchFilter, setCategorySearchFilter] = useState("");

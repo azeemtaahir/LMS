@@ -8,18 +8,16 @@ const MOCK_OVERDUE_BOOKS = [];
 
 export const useTransactionHook = () => {
   const [searchParams] = useSearchParams();
+  const searchParamQuery = searchParams.get("search") || "";
+  const statusParam = searchParams.get("status") || "All";
+
   const [recentIssues, setRecentIssues] = useState([]);
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const searchParamQuery = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(searchParamQuery);
   const [prevSearchParam, setPrevSearchParam] = useState(searchParamQuery);
-
-  if (prevSearchParam !== searchParamQuery) {
-    setPrevSearchParam(searchParamQuery);
-    setSearchQuery(searchParamQuery);
-  }
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState(statusParam);
+  const [prevStatusParam, setPrevStatusParam] = useState(statusParam);
 
   const [issueFormData, setIssueFormData] = useState({
     studentId: "",
@@ -32,6 +30,16 @@ export const useTransactionHook = () => {
   const [searchStudentId, setSearchStudentId] = useState("");
   const [searchBookId, setSearchBookId] = useState("");
   const [activeReturnDetails, setActiveReturnDetails] = useState(null);
+
+  if (prevSearchParam !== searchParamQuery) {
+    setPrevSearchParam(searchParamQuery);
+    setSearchQuery(searchParamQuery);
+  }
+
+  if (prevStatusParam !== statusParam) {
+    setPrevStatusParam(statusParam);
+    setStatusFilter(statusParam);
+  }
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
