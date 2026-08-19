@@ -1,0 +1,245 @@
+import { useState } from "react";
+import { useBookController } from "../../../hooks/useBookHook";
+
+import {
+  Search,
+  BookOpen,
+  Filter,
+  CheckCircle2,
+  X,
+  Info,
+  BookmarkPlus,
+  BookmarkCheck,
+} from "lucide-react";
+
+export default function MemberSearchBooksView() {
+  const { books, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory } = useBookController();
+  const [availabilityFilter, setAvailabilityFilter] = useState("All");
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [reservedBookIds, setReservedBookIds] = useState([]);
+  const [reservationSuccessMessage, setReservationSuccessMessage] = useState("");
+
+  const categories = [
+    "All",
+    "Computer Science",
+    "Information Technology",
+    "Electronics",
+    "Mechanical",
+    "Fiction",
+    "Business",
+  ];
+
+  const filteredBooks = books.filter((b) => {
+    const matchesSearch =
+      b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (b.isbn && b.isbn.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (b.category && b.category.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesCat = selectedCategory === "All" || b.category === selectedCategory;
+    const matchesAvail = availabilityFilter === "All" || (b.availableQuantity && b.availableQuantity > 0);
+
+    return matchesSearch && matchesCat && matchesAvail;
+  });
+
+  const handleReserveBook = (book) => {
+    if (reservedBookIds.includes(book.id)) {
+      alert(`You have already requested to reserve "${book.title}".`);
+      return;
+    }
+    setReservedBookIds((prev) => [...prev, book.id]);
+    setReservationSuccessMessage(`Reservation request submitted successfully for "${book.title}"!`);
+    setTimeout(() => setReservationSuccessMessage(""), 4000);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+      {reservationSuccessMessage && (
+        <div className="bg-emerald-600 text-white p-4 rounded-xl shadow-lg flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2 text-xs font-bold">
+            <CheckCircle2 size={18} />
+            <span>{reservationSuccessMessage}</span>
+          </div>
+          <button onClick={() => setReservationSuccessMessage("")} className="text-white hover:text-emerald-200">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* SEARCH HEADER */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl border border-indigo-900/40 shadow-xl space-y-4 text-white">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3.5 top-3 text-indigo-300/70" size={18} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title, author, category, ISBN..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-indigo-500/30 bg-slate-900/80 text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            <label className="text-xs font-semibold text-indigo-200 flex items-center gap-1">
+              <Filter size={14} /> Availability:
+            </label>
+            <select
+              value={availabilityFilter}
+              onChange={(e) => setAvailabilityFilter(e.target.value)}
+              className="px-3.5 py-2 text-xs rounded-xl border border-indigo-500/30 bg-slate-900/80 text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition cursor-pointer"
+            >
+              <option value="All" className="bg-slate-900 text-white">All Catalog Books</option>
+              <option value="Available" className="bg-slate-900 text-white">Available Now Only</option>
+            </select>
+          </div>
+        </div>
+
+        {/* CATEGORIES */}
+        <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-1 scrollbar-thin">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                selectedCategory === cat
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  : "bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/50"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* BOOKS GRID */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-slate-800">
+            Search Books Catalog ({filteredBooks.length})
+          </h2>
+        </div>
+
+        {filteredBooks.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
+            <BookOpen size={40} className="mx-auto text-slate-300" />
+            <p className="text-sm font-semibold text-slate-600">No books found matching your criteria.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+            {filteredBooks.map((book) => {
+              const isAvailable = (book.availableQuantity || 1) > 0;
+              const isReserved = reservedBookIds.includes(book.id);
+
+              return (
+                <div
+                  key={book.id}
+                  className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
+                >
+                  <div className="p-4 space-y-3">
+                    <div className="w-full h-36 rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center text-white relative overflow-hidden">
+                      <BookOpen size={40} className="text-indigo-400 opacity-80" />
+                      <span
+                        className={`absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                          isAvailable
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                        }`}
+                      >
+                        {isAvailable ? "Available" : "Checked Out"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100 inline-block mb-1">
+                        {book.category || "General"}
+                      </span>
+                      <h3 className="text-xs font-bold text-slate-900 line-clamp-1">
+                        {book.title}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-medium">By {book.author}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedBook(book)}
+                      className="flex-1 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <Info size={13} />
+                      <span>Details</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleReserveBook(book)}
+                      disabled={!isAvailable || isReserved}
+                      className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 ${
+                        isReserved
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                          : isAvailable
+                          ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20"
+                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                      }`}
+                    >
+                      {isReserved ? <BookmarkCheck size={13} /> : <BookmarkPlus size={13} />}
+                      <span>{isReserved ? "Requested" : "Reserve"}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* BOOK DETAILS MODAL */}
+      {selectedBook && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100">
+                  {selectedBook.category || "General"}
+                </span>
+                <h2 className="text-base font-bold text-slate-900 mt-1">{selectedBook.title}</h2>
+                <p className="text-xs text-slate-500 font-medium">By {selectedBook.author}</p>
+              </div>
+              <button onClick={() => setSelectedBook(null)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <div><span className="font-bold text-slate-800">ISBN:</span> {selectedBook.isbn || "978-0132350884"}</div>
+                <div><span className="font-bold text-slate-800">Shelf Location:</span> Floor 2, Aisle 4</div>
+              </div>
+              <p className="text-slate-500 leading-relaxed">
+                {selectedBook.description || "Comprehensive reference guide covering software engineering and computer science practices."}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setSelectedBook(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  handleReserveBook(selectedBook);
+                  setSelectedBook(null);
+                }}
+                className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold shadow-md"
+              >
+                Request Reservation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

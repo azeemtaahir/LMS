@@ -1,0 +1,15 @@
+import { FineModel } from '../models/fineModel.js';
+
+export const fineService = {
+  async getAllFines() {
+    return await FineModel.findAll();
+  },
+
+  async createFine({ member_id, loan_id, fine_amount }) {
+    return await FineModel.create({ member_id, loan_id, fine_amount });
+  },
+
+  async payFine({ member_id, payment_amount }) {
+    return await FineModel.payFine({ member_id, payment_amount });
+  }
+};
