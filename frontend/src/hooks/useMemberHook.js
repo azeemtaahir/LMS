@@ -183,7 +183,7 @@ export const useMemberHook = () => {
 
       // Persist to registered_users in localStorage so user can log in
       const existingRegistered = JSON.parse(localStorage.getItem("registered_users") || "[]");
-      const updatedRegistered = [...existingRegistered, payload];
+      const updatedRegistered = [...existingRegistered.filter((u) => u.email !== payload.email), payload];
       localStorage.setItem("registered_users", JSON.stringify(updatedRegistered));
 
       setStudents((prev) => [...prev, newStudent]);
@@ -215,19 +215,28 @@ export const useMemberHook = () => {
   };
 
   const handleUpdateStudent = async (id, updatedData) => {
+    let updatedMember;
     try {
       const res = await api.put(`/member/${id}`, updatedData);
-      const updatedMember = res.data?.member || res.data || updatedData;
-      setStudents((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, ...updatedMember } : s))
-      );
-      return updatedMember;
+      updatedMember = res.data?.member || res.data || updatedData;
     } catch (err) {
       console.warn("API PUT /member failed:", err?.message);
-      setStudents((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, ...updatedData } : s))
-      );
+      updatedMember = updatedData;
     }
+
+    setStudents((prev) =>
+      prev.map((s) => (s.id === id || s.studentId === id ? { ...s, ...updatedMember } : s))
+    );
+
+    // Sync localStorage registered_users
+    const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
+    const updatedRegistered = registeredUsers.map((u) =>
+      (u.id === id || u.user_id === id || u.studentId === id || u.email === updatedData.email)
+        ? { ...u, ...updatedData }
+        : u
+    );
+    localStorage.setItem("registered_users", JSON.stringify(updatedRegistered));
+    return updatedMember;
   };
 
   const filteredStudents = students.filter((s) => {

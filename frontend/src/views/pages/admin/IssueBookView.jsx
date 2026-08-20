@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useBookController } from "../../../hooks/useBookHook";
 import { useMemberController } from "../../../hooks/useMemberHook";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
@@ -6,6 +6,7 @@ import { User, BookOpen, ArrowRight } from "lucide-react";
 
 export default function IssueBookView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { books } = useBookController();
   const { students } = useMemberController();
   const { issueFormData, setIssueFormData, handleIssueBookSubmit } = useTransactionController();
@@ -13,10 +14,13 @@ export default function IssueBookView() {
   const selectedStudentObj = students.find((s) => String(s.id) === String(issueFormData.studentId));
   const selectedBookObj = books.find((b) => String(b.id) === String(issueFormData.bookId));
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    handleIssueBookSubmit(e);
-    navigate("/admin/transactions/issued");
+    await handleIssueBookSubmit(e);
+    const targetPath = location.pathname.startsWith("/librarian")
+      ? "/librarian/transactions/issued"
+      : "/admin/transactions/issued";
+    navigate(targetPath);
   };
 
   return (

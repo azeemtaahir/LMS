@@ -97,20 +97,26 @@ export default function ManageBooksView() {
       alert("Book Title and Author Name are required.");
       return;
     }
+    const payload = {
+      id: editingBook.id,
+      title: editFormData.title,
+      author: editFormData.author,
+      isbn: editFormData.isbn,
+      category: editFormData.category || "General",
+      copies_owned: Number(editFormData.quantity) || 1,
+      totalQuantity: Number(editFormData.quantity) || 1,
+      availableCopies: Number(editFormData.quantity) || 1,
+      publisher: editFormData.publisher,
+      edition: editFormData.edition,
+      shelfNumber: editFormData.shelfNumber,
+      status: editFormData.status,
+    };
     try {
-      const payload = {
-        title: editFormData.title,
-        author: editFormData.author,
-        isbn: editFormData.isbn,
-        category: editFormData.category || "General",
-        copies_owned: Number(editFormData.quantity) || 1,
-        totalQuantity: Number(editFormData.quantity) || 1,
-        publisher: editFormData.publisher,
-        edition: editFormData.edition,
-        shelfNumber: editFormData.shelfNumber,
-        status: editFormData.status,
-      };
-      await api.put(`/books/${editingBook.id}`, payload);
+      try {
+        await api.put(`/books/${editingBook.id}`, payload);
+      } catch (err) {
+        console.warn("API PUT /books fallback:", err?.message);
+      }
       alert("Book updated successfully!");
       if (refreshBooks) await refreshBooks();
       setEditingBook(null);

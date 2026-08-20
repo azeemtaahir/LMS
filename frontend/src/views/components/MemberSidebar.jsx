@@ -35,8 +35,9 @@ export default function MemberSidebar({ isOpen, onClose }) {
     if (logoutUser) logoutUser();
     localStorage.removeItem("user");
     localStorage.removeItem("lms_user");
+    localStorage.removeItem("token");
     if (onClose) onClose();
-    navigate("/login");
+    navigate("/dashboard");
   };
 
   return (

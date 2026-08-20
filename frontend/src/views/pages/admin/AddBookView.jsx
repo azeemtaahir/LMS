@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useBookController } from "../../../hooks/useBookHook";
 import api from "../../../api/api";
 
 export default function AddBookView({ onCancel, onSuccess }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { categoriesList, refreshBooks } = useBookController();
+
+  const getManageBooksPath = () =>
+    location.pathname.startsWith("/librarian")
+      ? "/librarian/books/manage"
+      : "/admin/books/manage";
 
   const DEFAULT_CATEGORIES = [
     "Fiction",
@@ -98,7 +104,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
       if (onSuccess) {
         onSuccess(res.data?.book || payload);
       } else {
-        navigate("/admin/books/manage");
+        navigate(getManageBooksPath());
       }
     } catch (err) {
       console.error("Error saving book:", err);
@@ -110,7 +116,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
     if (onCancel) {
       onCancel();
     } else {
-      navigate("/admin/books/manage");
+      navigate(getManageBooksPath());
     }
   };
 

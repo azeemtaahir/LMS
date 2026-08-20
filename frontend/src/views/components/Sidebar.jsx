@@ -63,7 +63,7 @@ export default function Sidebar({ isOpen, onClose }) {
           ]
         },
         {
-          heading: "MANAGE",
+          heading: "MANAGEMENT",
           items: [
             { name: "Manage Books", path: "/admin/books/manage", icon: BookOpen },
             { name: "Manage Users", path: "/admin/users/manage", icon: Users },
@@ -110,8 +110,9 @@ export default function Sidebar({ isOpen, onClose }) {
     if (logoutUser) logoutUser();
     localStorage.removeItem('lms_user');
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     if (onClose) onClose();
-    navigate('/login');
+    navigate('/dashboard');
   };
 
   return (

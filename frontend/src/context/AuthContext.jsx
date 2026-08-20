@@ -7,9 +7,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem("user");
-      return savedUser ? JSON.parse(savedUser) : { id: 1, name: "Admin", email: "admin@library.com", role: "Admin" };
+      return savedUser ? JSON.parse(savedUser) : null;
     } catch {
-      return { id: 1, name: "Admin", email: "admin@library.com", role: "Admin" };
+      return null;
     }
   });
 
@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   const logoutUser = () => {
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("lms_user");
     localStorage.removeItem("token");
   };
 

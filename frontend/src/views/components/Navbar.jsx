@@ -35,10 +35,10 @@ export default function Navbar({ onToggleSidebar }) {
   };
 
   const pageTitle = getPageTitle(location.pathname);
-  const isBooksPage = location.pathname.includes("/admin/books");
-  const isUsersPage = location.pathname.includes("/admin/users") || location.pathname.includes("/admin/students");
-  const isLibrariansPage = location.pathname.includes("/admin/librarians");
-  const isIssuedBooksPage = location.pathname.includes("/admin/transactions/issued") || location.pathname.includes("/transactions/issued");
+  const isBooksPage = location.pathname.includes("/books");
+  const isUsersPage = location.pathname.includes("/users") || location.pathname.includes("/students");
+  const isLibrariansPage = location.pathname.includes("/librarians");
+  const isIssuedBooksPage = location.pathname.includes("/transactions/issued");
 
   const isAddBookOpen = searchParams.get("add") === "true";
   const isRegisterUserOpen = searchParams.get("register") === "true";
@@ -84,7 +84,10 @@ export default function Navbar({ onToggleSidebar }) {
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter" && currentSearch) {
       if (!location.pathname.includes("/manage") && !location.pathname.includes("/issued")) {
-        navigate(`/admin/books/manage?search=${encodeURIComponent(currentSearch)}`);
+        const basePath = location.pathname.startsWith("/librarian")
+          ? "/librarian/books/manage"
+          : "/admin/books/manage";
+        navigate(`${basePath}?search=${encodeURIComponent(currentSearch)}`);
       }
     }
   };

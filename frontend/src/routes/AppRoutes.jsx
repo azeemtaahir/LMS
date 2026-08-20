@@ -14,6 +14,7 @@ import PublicDashboardView from "../views/pages/public/PublicDashboardView";
 import DashboardView from "../views/pages/admin/DashboardView";
 import ManageBooksView from "../views/pages/admin/ManageBooksView";
 import ManageUsersView from "../views/pages/admin/ManageMemberView";
+import RegisterUsersView from "../views/pages/admin/RegisterMemberView";
 import RegisterLibrarianView from "../views/pages/admin/RegisterLibrarianView";
 import ManageLibrarianView from "../views/pages/admin/ManageLibrarianView";
 import IssueBookView from "../views/pages/admin/IssueBookView";
@@ -204,11 +205,24 @@ export default function AppRoutes() {
 
         {/* Users / Members */}
         <Route
+          path="users/register"
+          element={<RegisterUsersView />}
+        />
+        <Route
           path="users/manage"
           element={<ManageUsersView />}
         />
 
         {/* Backward-compatible students route */}
+        <Route
+          path="students/register"
+          element={
+            <Navigate
+              to="/admin/users/register"
+              replace
+            />
+          }
+        />
         <Route
           path="students/manage"
           element={
