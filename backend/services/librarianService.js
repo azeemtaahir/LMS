@@ -117,21 +117,63 @@ export const librarianService = {
   async updateLibrarian(id, data) {
     const name = data.name || data.fullName;
     const email = data.email;
-    const phone = data.phone || data.phonenumber;
+    const phone = data.phone || data.phonenumber || "";
     const status = data.status || 'active';
 
-    const result = await lms.query(
-      `UPDATE users
-       SET name = COALESCE($1, name),
-           email = COALESCE($2, email),
-           phonenumber = COALESCE($3, phonenumber),
-           phone = COALESCE($3, phone),
-           status = COALESCE($4, status)
-       WHERE id = $5
-       RETURNING id, username AS "librarianId", email, name, COALESCE(phonenumber, phone) AS "phone", status, created_at AS "joinedDate"`,
-      [name, email, phone, status, id]
-    );
-    return result.rows[0] || null;
+    let result;
+    try {
+      result = await lms.query(
+        `UPDATE users
+         SET name = COALESCE($1, name),
+             email = COALESCE($2, email),
+             phone = COALESCE($3, phone),
+             status = COALESCE($4, status)
+         WHERE id = $5
+         RETURNING id, username AS "librarianId", email, name, phone, status, created_at AS "joinedDate"`,
+        [name, email, phone, status, id]
+      );
+    } catch (err) {
+      try {
+        result = await lms.query(
+          `UPDATE users
+           SET name = COALESCE($1, name),
+               email = COALESCE($2, email),
+               phonenumber = COALESCE($3, phonenumber),
+               status = COALESCE($4, status)
+           WHERE id = $5
+           RETURNING id, username AS "librarianId", email, name, status, created_at AS "joinedDate"`,
+          [name, email, phone, status, id]
+        );
+      } catch (e2) {
+        result = await lms.query(
+          `UPDATE users
+           SET name = COALESCE($1, name),
+               email = COALESCE($2, email),
+               status = COALESCE($3, status)
+           WHERE id = $4
+           RETURNING id, username AS "librarianId", email, name, status, created_at AS "joinedDate"`,
+          [name, email, status, id]
+        );
+      }
+    }
+
+    const updated = result ? result.rows[0] : null;
+
+    if (updated) {
+      try {
+        const parts = (name || '').split(' ');
+        const firstName = parts[0] || 'Librarian';
+        const lastName = parts.slice(1).join(' ') || 'Staff';
+        await lms.query(
+          `UPDATE member SET first_name = $1, last_name = $2, email = $3, status = $4 WHERE user_id = $5 OR email = $3`,
+          [firstName, lastName, email, status, updated.username]
+        );
+      } catch (mErr) {
+        console.warn("Member update sync warning:", mErr.message);
+      }
+    }
+
+    return updated;
   },
 
   async deleteLibrarian(id) {

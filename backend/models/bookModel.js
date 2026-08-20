@@ -159,11 +159,21 @@ export class BookModel {
         const firstName = parts[0] || 'Unknown';
         const lastName = parts.slice(1).join(' ') || 'Author';
 
-        const authRes = await lms.query(
-          `INSERT INTO author (first_name, last_name) VALUES ($1, $2) RETURNING id`,
+        let authorId;
+        const existingAuthor = await lms.query(
+          `SELECT id FROM author WHERE LOWER(first_name) = LOWER($1) AND LOWER(last_name) = LOWER($2)`,
           [firstName, lastName]
         );
-        const authorId = authRes.rows[0].id;
+
+        if (existingAuthor.rows.length > 0) {
+          authorId = existingAuthor.rows[0].id;
+        } else {
+          const authRes = await lms.query(
+            `INSERT INTO author (first_name, last_name) VALUES ($1, $2) RETURNING id`,
+            [firstName, lastName]
+          );
+          authorId = authRes.rows[0].id;
+        }
 
         await lms.query(
           `INSERT INTO book_author (book_id, author_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
@@ -204,11 +214,21 @@ export class BookModel {
         const firstName = parts[0] || 'Unknown';
         const lastName = parts.slice(1).join(' ') || 'Author';
 
-        const authRes = await lms.query(
-          `INSERT INTO author (first_name, last_name) VALUES ($1, $2) RETURNING id`,
+        let authorId;
+        const existingAuthor = await lms.query(
+          `SELECT id FROM author WHERE LOWER(first_name) = LOWER($1) AND LOWER(last_name) = LOWER($2)`,
           [firstName, lastName]
         );
-        const authorId = authRes.rows[0].id;
+
+        if (existingAuthor.rows.length > 0) {
+          authorId = existingAuthor.rows[0].id;
+        } else {
+          const authRes = await lms.query(
+            `INSERT INTO author (first_name, last_name) VALUES ($1, $2) RETURNING id`,
+            [firstName, lastName]
+          );
+          authorId = authRes.rows[0].id;
+        }
 
         await lms.query(`DELETE FROM book_author WHERE book_id = $1`, [id]);
         await lms.query(

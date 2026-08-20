@@ -65,12 +65,56 @@ export class MemberModel {
     return result.rows[0];
   }
 
-  static async update(id, { first_name, last_name, joined_date, status }) {
-    const result = await lms.query(
-      'UPDATE member SET first_name = $1, last_name = $2, joined_date = $3, status = $4 WHERE id = $5 RETURNING *',
-      [first_name, last_name, joined_date, status, id]
-    );
-    return result.rows[0] || null;
+  static async update(id, { first_name, last_name, email, role, joined_date, status }) {
+    const fullName = `${first_name || ''} ${last_name || ''}`.trim();
+    let result;
+    try {
+      result = await lms.query(
+        `UPDATE member 
+         SET first_name = COALESCE($1, first_name), 
+             last_name = COALESCE($2, last_name), 
+             email = COALESCE($3, email),
+             role = COALESCE($4, role),
+             joined_date = COALESCE($5, joined_date), 
+             status = COALESCE($6, status) 
+         WHERE id = $7 RETURNING *`,
+        [first_name || null, last_name || null, email || null, role || null, joined_date || null, status || null, id]
+      );
+    } catch (err) {
+      result = await lms.query(
+        `UPDATE member 
+         SET first_name = COALESCE($1, first_name), 
+             last_name = COALESCE($2, last_name), 
+             joined_date = COALESCE($3, joined_date), 
+             status = COALESCE($4, status) 
+         WHERE id = $5 RETURNING *`,
+        [first_name || null, last_name || null, joined_date || null, status || null, id]
+      );
+    }
+
+    if (id) {
+      try {
+        await lms.query(
+          `UPDATE users
+           SET name = COALESCE($1, name),
+               email = COALESCE($2, email),
+               status = COALESCE($3, status)
+           WHERE member_id = $4`,
+          [fullName || null, email || null, status || null, id]
+        );
+      } catch (uErr) {
+        console.warn("Linked user update warning:", uErr.message);
+      }
+    }
+
+    const updated = result.rows[0];
+    return updated ? {
+      ...updated,
+      studentId: updated.user_id || `MEM-${updated.id}`,
+      name: `${updated.first_name || ''} ${updated.last_name || ''}`.trim() || fullName,
+      email: updated.email || email,
+      role: updated.role || role || 'Student',
+    } : null;
   }
 
   static async delete(id) {
