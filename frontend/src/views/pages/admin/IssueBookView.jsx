@@ -93,7 +93,20 @@ export default function IssueBookView() {
               <input
                 type="date"
                 value={issueFormData.issueDate}
-                onChange={(e) => setIssueFormData((prev) => ({ ...prev, issueDate: e.target.value }))}
+                onChange={(e) => {
+                  const newIssueDate = e.target.value;
+                  const d = new Date(newIssueDate);
+                  let calcReturn = "";
+                  if (!isNaN(d.getTime())) {
+                    d.setDate(d.getDate() + 7);
+                    calcReturn = d.toISOString().split("T")[0];
+                  }
+                  setIssueFormData((prev) => ({
+                    ...prev,
+                    issueDate: newIssueDate,
+                    returnDate: calcReturn || prev.returnDate,
+                  }));
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-indigo-500/30 bg-slate-900 text-white text-xs focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
               />
             </div>

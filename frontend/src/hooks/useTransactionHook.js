@@ -6,6 +6,14 @@ const MOCK_RECENT_ISSUES = [];
 
 const MOCK_OVERDUE_BOOKS = [];
 
+const getTodayStr = () => new Date().toISOString().split("T")[0];
+const get7DaysLaterStr = (baseDateStr) => {
+  const d = baseDateStr ? new Date(baseDateStr) : new Date();
+  if (isNaN(d.getTime())) return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().split("T")[0];
+};
+
 export const useTransactionHook = () => {
   const [searchParams] = useSearchParams();
   const searchParamQuery = searchParams.get("search") || "";
@@ -19,11 +27,12 @@ export const useTransactionHook = () => {
   const [statusFilter, setStatusFilter] = useState(statusParam);
   const [prevStatusParam, setPrevStatusParam] = useState(statusParam);
 
+  const initialToday = getTodayStr();
   const [issueFormData, setIssueFormData] = useState({
     studentId: "",
     bookId: "",
-    issueDate: new Date().toISOString().split("T")[0],
-    returnDate: "",
+    issueDate: initialToday,
+    returnDate: get7DaysLaterStr(initialToday),
     notes: "",
   });
 
@@ -126,11 +135,12 @@ export const useTransactionHook = () => {
       }
       setRecentIssues((prev) => [newIssue, ...prev]);
       alert("Book issued successfully!");
+      const freshToday = getTodayStr();
       setIssueFormData({
         studentId: "",
         bookId: "",
-        issueDate: new Date().toISOString().split("T")[0],
-        returnDate: "",
+        issueDate: freshToday,
+        returnDate: get7DaysLaterStr(freshToday),
         notes: "",
       });
     } catch (err) {
