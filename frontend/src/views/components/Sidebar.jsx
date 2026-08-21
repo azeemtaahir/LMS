@@ -44,7 +44,7 @@ export default function Sidebar({ isOpen, onClose }) {
           heading: "CIRCULATION",
           items: [
             { name: "Issue Book", path: "/issue-lib", icon: BookUp },
-            { name: "Return Book", path: "/return-lib", icon: BookDown },
+            { name: "Fine Book", path: "/return-lib", icon: BookDown },
             { name: "Issued Books", path: "/issued-lib", icon: BookMarked },
           ]
         },
@@ -75,7 +75,7 @@ export default function Sidebar({ isOpen, onClose }) {
           heading: "CIRCULATION",
           items: [
             { name: "Issue Book", path: "/issue", icon: BookUp },
-            { name: "Return Book", path: "/return", icon: BookDown },
+            { name: "Fine Book", path: "/return", icon: BookDown },
             { name: "Issued Books", path: "/issued", icon: BookMarked },
           ]
         },

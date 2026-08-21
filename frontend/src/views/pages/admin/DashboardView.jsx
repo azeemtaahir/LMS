@@ -185,7 +185,7 @@ export default function DashboardView() {
         {/* RECENT TRANSACTIONS */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
 
-          <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white border-b border-slate-800">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex items-center justify-between text-white border-b border-indigo-900/40">
             <div className="flex items-center gap-2.5 font-bold text-xs sm:text-sm tracking-tight">
               <ClipboardList
                 size={18}
@@ -207,7 +207,7 @@ export default function DashboardView() {
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left text-xs">
 
-              <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+              <thead className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 font-bold uppercase tracking-wider text-[11px] border-b border-indigo-950">
                 <tr>
                   <th className="py-3.5 px-5">ID</th>
                   <th className="py-3.5 px-5">

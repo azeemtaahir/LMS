@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLibrarianController } from "../../../hooks/useLibrarianHook";
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import RegisterLibrarianView from "./RegisterLibrarianView";
 
 export default function ManageLibrarianView() {
@@ -18,11 +18,22 @@ export default function ManageLibrarianView() {
     handleDeleteLibrarian,
   } = useLibrarianController();
 
+  // Filter librarians by search query (name, email, phone, or ID)
+  const filteredLibrarians = (librarians || []).filter((lib) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const matchesName = lib.name?.toLowerCase().includes(query);
+    const matchesEmail = lib.email?.toLowerCase().includes(query);
+    const matchesPhone = lib.phone?.toLowerCase().includes(query);
+    const matchesId = (lib.librarianId || `LIB-${lib.id}`).toLowerCase().includes(query);
+    return matchesName || matchesEmail || matchesPhone || matchesId;
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
-  const totalPages = Math.ceil((librarians || []).length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredLibrarians.length / ITEMS_PER_PAGE);
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-  const currentLibrarians = (librarians || []).slice(
+  const currentLibrarians = filteredLibrarians.slice(
     (validCurrentPage - 1) * ITEMS_PER_PAGE,
     validCurrentPage * ITEMS_PER_PAGE
   );
@@ -80,7 +91,7 @@ export default function ManageLibrarianView() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+    <div className="max-w-7xl mx-auto space-y-4 pt-1 pb-12 select-none">
       {/* Conditionally Render Registration Form OR Table */}
       {showRegisterForm ? (
         <div className="bg-amber-50/20 p-4 sm:p-6 rounded-2xl border border-amber-900/10 transition-all duration-300">
@@ -91,7 +102,27 @@ export default function ManageLibrarianView() {
         </div>
       ) : (
         <>
+          {/* Controls Toolbar: Search & Register Button */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+              <input
+                type="text"
+                placeholder="Search name, email, phone, ID..."
+                value={searchQuery || ""}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+              />
+            </div>
 
+            <button
+              type="button"
+              onClick={handleOpenRegisterForm}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-xs cursor-pointer"
+            >
+              <Plus size={15} /> Add Librarian
+            </button>
+          </div>
 
           {/* Librarians Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -120,7 +151,7 @@ export default function ManageLibrarianView() {
                         <td className="py-3 px-4 font-semibold text-slate-800">{lib.name}</td>
                         <td className="py-3 px-4 text-slate-600">
                           <div>{lib.email}</div>
-                          <div className="text-[11px] text-slate-400">{lib.phone}</div>
+                          <div className="text-[11px] text-slate-400">{lib.phone || "N/A"}</div>
                         </td>
                         <td className="py-3 px-4">
                           <span
@@ -170,7 +201,7 @@ export default function ManageLibrarianView() {
               <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
                 <span className="text-slate-500 font-medium">
                   Showing {(validCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                  {Math.min(validCurrentPage * ITEMS_PER_PAGE, (librarians || []).length)} of {(librarians || []).length} librarians
+                  {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredLibrarians.length)} of {filteredLibrarians.length} librarians
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button

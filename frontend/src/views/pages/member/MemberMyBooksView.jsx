@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { RotateCcw, BookOpen } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import BookCoverImage from "../../components/BookCoverImage";
 
 export default function MemberMyBooksView() {
   const [activeTab, setActiveTab] = useState("current");
@@ -66,8 +67,8 @@ export default function MemberMyBooksView() {
               className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5"
             >
               <div className="flex items-start gap-4">
-                <div className="w-12 h-16 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
-                  <BookOpen size={24} />
+                <div className="w-12 h-16 shrink-0">
+                  <BookCoverImage book={item} className="w-12 h-16 object-cover rounded-xl shadow-md border border-slate-200" />
                 </div>
                 <div className="space-y-1">
                   <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100">

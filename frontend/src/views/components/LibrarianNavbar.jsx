@@ -12,7 +12,7 @@ export default function LibrarianNavbar({ onToggleSidebar }) {
   const getPageTitle = (path) => {
     if (path === "/manage-lib" || path === "/librarian/manage-lib" || path === "/managelib") return "Manage Books";
     if (path === "/issue-lib" || path === "/librarian/issue-lib") return "Issue Book";
-    if (path === "/return-lib" || path === "/librarian/return-lib") return "Return Book";
+    if (path === "/return-lib" || path === "/librarian/return-lib") return "Fine Book";
     if (path === "/issued-lib" || path === "/librarian/issued-lib") return "Issued Books";
     if (path === "/reports-lib" || path === "/librarian/reports-lib") return "Reports & Analytics";
     if (path.includes("manage-lib")) return "Manage Books";

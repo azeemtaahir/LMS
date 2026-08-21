@@ -21,7 +21,7 @@ export default function LibrarianSidebar({ isOpen, onClose }) {
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Manage Books", path: "/manage-lib", icon: BookOpen },
     { name: "Issue Book", path: "/issue-lib", icon: BookUp },
-    { name: "Return Book", path: "/return-lib", icon: BookDown },
+    { name: "Fine Book", path: "/return-lib", icon: BookDown },
     { name: "Issued Books", path: "/issued-lib", icon: BookMarked },
     { name: "View Reports", path: "/reports-lib", icon: BarChart3 },
   ];

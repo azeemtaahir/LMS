@@ -80,7 +80,7 @@ export default function IssuedBooksView() {
                     <td className="py-3 px-4 font-semibold text-slate-800">{item.studentName}</td>
                     <td className="py-3 px-4 text-slate-700 font-medium">{item.bookTitle}</td>
                     <td className="py-3 px-4 text-slate-600">{item.issueDate}</td>
-                    <td className="py-3 px-4 text-slate-600">{item.returnDate || item.dueDate || "15-05-2024"}</td>
+                    <td className="py-3 px-4 text-slate-600">{item.dueDate || item.returnDate || "-"}</td>
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${

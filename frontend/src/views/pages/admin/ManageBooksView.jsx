@@ -15,9 +15,7 @@ export default function ManageBooksView() {
   const {
     books,
     searchQuery,
-    setSearchQuery,
     selectedCategory,
-    setSelectedCategory,
     categoriesList,
     refreshBooks
   } = useBookController();
@@ -46,7 +44,7 @@ export default function ManageBooksView() {
     new Set([...DEFAULT_CATEGORIES, ...fetchedCatNames, ...bookCatNames])
   );
 
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter] = useState("All");
 
   // Action Modals State
   const [viewingBook, setViewingBook] = useState(null);
@@ -62,13 +60,6 @@ export default function ManageBooksView() {
     shelfNumber: "",
     status: "Available",
   });
-
-  const handleOpenAddForm = () => {
-    setSearchParams((prev) => {
-      prev.set("add", "true");
-      return prev;
-    });
-  };
 
   const handleCloseAddForm = () => {
     if (refreshBooks) refreshBooks();
@@ -146,9 +137,8 @@ export default function ManageBooksView() {
   };
 
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = 5;
 
-  // Integrated searchQuery and selectedCategory filters
   const filteredBooks = (books || []).filter((book) => {
     const matchesStatus = statusFilter === "All" || book.status === statusFilter;
     const matchesCategory =
@@ -170,133 +160,144 @@ export default function ManageBooksView() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-3 pt-1 pb-8 select-none">
-      {/* Conditionally Render Add Book Form OR Manage Books Table */}
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
       {showAddForm ? (
         <div className="bg-amber-50/20 p-4 sm:p-6 rounded-2xl border border-amber-900/10 transition-all duration-300">
           <AddBookView onCancel={handleCloseAddForm} onSuccess={handleCloseAddForm} />
         </div>
       ) : (
-        <>
-
-
-          {/* Books Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 font-semibold uppercase tracking-wider text-[11px] border-b border-indigo-950">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 font-semibold uppercase tracking-wider text-[11px] border-b border-indigo-950">
+                <tr>
+                  <th className="py-3.5 px-4">Cover</th>
+                  <th className="py-3.5 px-4">ID</th>
+                  <th className="py-3.5 px-4">Book Title</th>
+                  <th className="py-3.5 px-4">Author</th>
+                  <th className="py-3.5 px-4">Category</th>
+                  <th className="py-3.5 px-4">Quantity</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  {!isLibrarian && <th className="py-3.5 px-4 text-center">Actions</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {currentBooks.length === 0 ? (
                   <tr>
-                    <th className="py-3.5 px-4">ID</th>
-                    <th className="py-3.5 px-4">Book Title</th>
-                    <th className="py-3.5 px-4">Author</th>
-                    <th className="py-3.5 px-4">Category</th>
-                    <th className="py-3.5 px-4">Quantity</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    {!isLibrarian && <th className="py-3.5 px-4 text-center">Actions</th>}
+                    <td colSpan={isLibrarian ? 7 : 8} className="py-8 text-center text-slate-400">
+                      No books found matching your criteria.
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {currentBooks.length === 0 ? (
-                    <tr>
-                      <td colSpan={isLibrarian ? 6 : 7} className="py-8 text-center text-slate-400">
-                        No books found matching your criteria.
+                ) : (
+                  currentBooks.map((book) => (
+                    <tr key={book.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-2.5 px-4">
+                        <img
+                          src={
+                            book.cover_image ||
+                            (book.isbn
+                              ? `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`
+                              : "https://placehold.co/40x60?text=No+Cover")
+                          }
+                          alt={book.title}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = "https://placehold.co/40x60?text=No+Cover";
+                          }}
+                          className="w-10 h-14 object-cover rounded shadow-xs bg-slate-100 border border-slate-200"
+                        />
                       </td>
-                    </tr>
-                  ) : (
-                    currentBooks.map((book) => (
-                      <tr key={book.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 font-bold text-slate-900">{book.id}</td>
-                        <td className="py-3 px-4 font-semibold text-slate-800">{book.title}</td>
-                        <td className="py-3 px-4 text-slate-600">{book.author || "Unknown Author"}</td>
-                        <td className="py-3 px-4 text-slate-600">{book.category || "General"}</td>
-                        <td className="py-3 px-4 text-slate-800 font-semibold">{book.totalQuantity ?? book.copies_owned ?? 1}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              (book.status || "Available") === "Available"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : (book.status || "Available") === "Issued"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-rose-100 text-rose-800"
-                            }`}
-                          >
-                            {book.status || "Available"}
-                          </span>
+                      <td className="py-3 px-4 font-bold text-slate-900">{book.id}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-800">{book.title}</td>
+                      <td className="py-3 px-4 text-slate-600">{book.author || "Unknown Author"}</td>
+                      <td className="py-3 px-4 text-slate-600">{book.category || "General"}</td>
+                      <td className="py-3 px-4 text-slate-800 font-semibold">{book.totalQuantity ?? book.copies_owned ?? 1}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                            (book.status || "Available") === "Available"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : (book.status || "Available") === "Issued"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-rose-100 text-rose-800"
+                          }`}
+                        >
+                          {book.status || "Available"}
+                        </span>
+                      </td>
+                      {!isLibrarian && (
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleViewBook(book)}
+                              title="View"
+                              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                            >
+                              <Eye size={15} />
+                            </button>
+                            <button
+                              onClick={() => handleEditBook(book)}
+                              title="Edit"
+                              className="p-1.5 text-indigo-600 hover:text-indigo-900 rounded-md hover:bg-indigo-50 transition cursor-pointer"
+                            >
+                              <Edit size={15} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(book)}
+                              title="Delete"
+                              className="p-1.5 text-rose-600 hover:text-rose-800 rounded-md hover:bg-rose-50 transition cursor-pointer"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         </td>
-                        {!isLibrarian && (
-                          <td className="py-3 px-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                onClick={() => handleViewBook(book)}
-                                title="View"
-                                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
-                              >
-                                <Eye size={15} />
-                              </button>
-                              <button
-                                onClick={() => handleEditBook(book)}
-                                title="Edit"
-                                className="p-1.5 text-indigo-600 hover:text-indigo-900 rounded-md hover:bg-indigo-50 transition cursor-pointer"
-                              >
-                                <Edit size={15} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteBook(book)}
-                                title="Delete"
-                                className="p-1.5 text-rose-600 hover:text-rose-800 rounded-md hover:bg-rose-50 transition cursor-pointer"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Dynamic Pagination Footer */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
-                <span className="text-slate-500 font-medium">
-                  Showing {(validCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                  {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredBooks.length)} of {filteredBooks.length} books
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    disabled={validCurrentPage === 1}
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        validCurrentPage === page
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  <button
-                    disabled={validCurrentPage === totalPages}
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </>
+
+          {/* Dynamic Pagination Footer */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
+              <span className="text-slate-500 font-medium">
+                Showing {(validCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredBooks.length)} of {filteredBooks.length} books
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  disabled={validCurrentPage === 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      validCurrentPage === page
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  disabled={validCurrentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* VIEW BOOK MODAL */}
@@ -316,52 +317,61 @@ export default function ManageBooksView() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Book Title</span>
-                <span className="text-slate-800 font-bold text-sm block mt-0.5">{viewingBook.title}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Author</span>
-                <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.author || "N/A"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">ISBN</span>
-                <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.isbn || "N/A"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Category</span>
-                <span className="text-indigo-600 font-semibold block mt-0.5">{viewingBook.category || "General"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Status</span>
-                <span
-                  className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mt-0.5 ${
-                    (viewingBook.status || "Available") === "Available"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : (viewingBook.status || "Available") === "Issued"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-rose-100 text-rose-800"
-                  }`}
-                >
-                  {viewingBook.status || "Available"}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Total Quantity</span>
-                <span className="text-slate-800 font-semibold block mt-0.5">{viewingBook.totalQuantity ?? viewingBook.copies_owned ?? 1}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Shelf Number</span>
-                <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.shelfNumber || "N/A"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Publisher</span>
-                <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.publisher || "N/A"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Edition</span>
-                <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.edition || "N/A"}</span>
+            <div className="flex gap-4 items-start">
+              <img
+                src={
+                  viewingBook.cover_image ||
+                  (viewingBook.isbn
+                    ? `https://covers.openlibrary.org/b/isbn/${viewingBook.isbn}-L.jpg`
+                    : "https://placehold.co/100x150?text=No+Cover")
+                }
+                alt={viewingBook.title}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "https://placehold.co/100x150?text=No+Cover";
+                }}
+                className="w-24 h-36 object-cover rounded-lg shadow-sm border border-slate-200 shrink-0 bg-slate-50"
+              />
+
+              <div className="grid grid-cols-2 gap-3 text-xs w-full">
+                <div className="col-span-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Book Title</span>
+                  <span className="text-slate-800 font-bold text-sm block mt-0.5">{viewingBook.title}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Author</span>
+                  <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.author || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">ISBN</span>
+                  <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.isbn || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Category</span>
+                  <span className="text-indigo-600 font-semibold block mt-0.5">{viewingBook.category || "General"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Status</span>
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mt-0.5 ${
+                      (viewingBook.status || "Available") === "Available"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : (viewingBook.status || "Available") === "Issued"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-rose-100 text-rose-800"
+                    }`}
+                  >
+                    {viewingBook.status || "Available"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Quantity</span>
+                  <span className="text-slate-800 font-semibold block mt-0.5">{viewingBook.totalQuantity ?? viewingBook.copies_owned ?? 1}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Shelf Number</span>
+                  <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.shelfNumber || "N/A"}</span>
+                </div>
               </div>
             </div>
 
@@ -473,21 +483,6 @@ export default function ManageBooksView() {
                     onChange={(e) => setEditFormData({ ...editFormData, edition: e.target.value })}
                     className="w-full px-3.5 py-2 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-stone-700 mb-1">Status</label>
-                  <select
-                    value={editFormData.status}
-                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer font-semibold"
-                  >
-                    <option value="Available">Available</option>
-                    <option value="Issued">Issued</option>
-                    <option value="Overdue">Overdue</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Reserved">Reserved</option>
-                  </select>
                 </div>
 
                 <div>

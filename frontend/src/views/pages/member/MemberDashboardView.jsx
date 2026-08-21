@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useBookController } from "../../../hooks/useBookHook";
+import BookCoverImage from "../../components/BookCoverImage";
 import {
   BookOpen,
   BookMarked,
@@ -141,10 +142,8 @@ export default function MemberDashboardView() {
                   className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex items-start gap-3.5">
-                    <div
-                      className={`w-12 h-14 rounded-lg bg-gradient-to-br ${item.coverColor} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md`}
-                    >
-                      <BookOpen size={22} />
+                    <div className="w-12 h-16 shrink-0">
+                      <BookCoverImage book={item} className="w-12 h-16 object-cover rounded-lg shadow-sm border border-slate-200" />
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-slate-800 line-clamp-1">{item.title}</h3>
@@ -202,14 +201,14 @@ export default function MemberDashboardView() {
                 key={b.id}
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200"
               >
-                <div className="w-9 h-11 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0 font-bold">
-                  <BookOpen size={18} />
+                <div className="w-10 h-14 shrink-0">
+                  <BookCoverImage book={b} className="w-10 h-14 object-cover rounded-lg border border-slate-200 shadow-xs" />
                 </div>
                 <div className="truncate flex-1 min-w-0">
                   <div className="text-xs font-bold text-slate-800 truncate">{b.title}</div>
                   <div className="text-[10px] text-slate-500 truncate">{b.author}</div>
                   <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 inline-block mt-0.5">
-                    Available ({b.availableQuantity || 3})
+                    Available ({b.availableQuantity || b.availableCopies || 1})
                   </span>
                 </div>
               </div>

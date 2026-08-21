@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useBookController } from "../../../hooks/useBookHook";
+import BookCoverImage from "../../components/BookCoverImage";
 import {
   Search,
   BookOpen,
@@ -248,8 +249,8 @@ export default function PublicDashboardView() {
                     className="bg-slate-900 rounded-2xl border border-slate-800 hover:border-indigo-500/50 shadow-md hover:shadow-xl hover:shadow-indigo-500/5 transition-all flex flex-col justify-between overflow-hidden group"
                   >
                     <div className="p-4 space-y-3">
-                      <div className="w-full h-40 rounded-xl bg-gradient-to-tr from-slate-950 via-indigo-950 to-slate-900 border border-slate-800 flex items-center justify-center text-white relative overflow-hidden group-hover:scale-101 transition-transform">
-                        <BookOpen size={48} className="text-indigo-400/80 group-hover:text-indigo-300 transition-colors" />
+                      <div className="w-full h-44 rounded-xl bg-slate-950 border border-slate-800 relative overflow-hidden group-hover:scale-101 transition-transform flex items-center justify-center">
+                        <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
                         <span
                           className={`absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
                             isAvailable
@@ -311,20 +312,25 @@ export default function PublicDashboardView() {
       {selectedBook && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-700/80 space-y-5">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[11px] font-bold border border-indigo-500/20">
-                  {selectedBook.category || "General"}
-                </span>
-                <h2 className="text-lg font-extrabold text-white mt-1.5">{selectedBook.title}</h2>
+            <div className="flex items-start gap-4 border-b border-slate-800 pb-4">
+              <div className="w-20 h-28 shrink-0">
+                <BookCoverImage book={selectedBook} className="w-20 h-28 object-cover rounded-xl border border-slate-700 shadow-md" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[11px] font-bold border border-indigo-500/20">
+                    {selectedBook.category || "General"}
+                  </span>
+                  <button
+                    onClick={() => setSelectedBook(null)}
+                    className="text-slate-400 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <h2 className="text-base font-extrabold text-white mt-1.5 line-clamp-2">{selectedBook.title}</h2>
                 <p className="text-xs text-slate-400 font-medium">Author: {selectedBook.author}</p>
               </div>
-              <button
-                onClick={() => setSelectedBook(null)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             <div className="space-y-3 text-xs text-slate-300">

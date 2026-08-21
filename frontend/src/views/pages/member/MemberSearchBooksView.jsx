@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useBookController } from "../../../hooks/useBookHook";
+import BookCoverImage from "../../components/BookCoverImage";
 
 import {
   Search,
@@ -138,8 +139,8 @@ export default function MemberSearchBooksView() {
                   className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
                 >
                   <div className="p-4 space-y-3">
-                    <div className="w-full h-36 rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center text-white relative overflow-hidden">
-                      <BookOpen size={40} className="text-indigo-400 opacity-80" />
+                    <div className="w-full h-40 rounded-xl bg-slate-900 border border-slate-200 flex items-center justify-center text-white relative overflow-hidden">
+                      <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
                       <span
                         className={`absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                           isAvailable
@@ -197,17 +198,22 @@ export default function MemberSearchBooksView() {
       {selectedBook && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div>
-                <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100">
-                  {selectedBook.category || "General"}
-                </span>
-                <h2 className="text-base font-bold text-slate-900 mt-1">{selectedBook.title}</h2>
+            <div className="flex items-start gap-4 border-b border-slate-100 pb-3">
+              <div className="w-20 h-28 shrink-0">
+                <BookCoverImage book={selectedBook} className="w-20 h-28 object-cover rounded-xl border border-slate-200 shadow-sm" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between">
+                  <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100">
+                    {selectedBook.category || "General"}
+                  </span>
+                  <button onClick={() => setSelectedBook(null)} className="text-slate-400 hover:text-slate-700 p-1">
+                    <X size={18} />
+                  </button>
+                </div>
+                <h2 className="text-base font-bold text-slate-900 mt-1 line-clamp-2">{selectedBook.title}</h2>
                 <p className="text-xs text-slate-500 font-medium">By {selectedBook.author}</p>
               </div>
-              <button onClick={() => setSelectedBook(null)} className="text-slate-400 hover:text-slate-700 p-1">
-                <X size={18} />
-              </button>
             </div>
 
             <div className="space-y-3 text-xs text-slate-600">

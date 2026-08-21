@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMemberController } from "../../../hooks/useMemberHook";
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import RegisterUsersView from "./RegisterMemberView";
 
 export default function ManageUsersView() {
@@ -22,11 +22,49 @@ export default function ManageUsersView() {
     handleUpdateStudent,
   } = useMemberController();
 
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const handleOpenRegisterForm = () => {
+    setSearchParams((prev) => {
+      prev.set("register", "true");
+      return prev;
+    });
+  };
+
+  const handleCloseRegisterForm = () => {
+    setSearchParams((prev) => {
+      prev.delete("register");
+      return prev;
+    });
+  };
+
+  // Derive unique department options from student records
+  const departmentOptions = Array.from(
+    new Set((students || []).map((s) => s.department).filter(Boolean))
+  );
+
+  // Multi-field search and dropdown filtering
+  const filteredStudents = (students || []).filter((s) => {
+    const query = (searchQuery || "").toLowerCase();
+    const matchesSearch =
+      !query ||
+      s.name?.toLowerCase().includes(query) ||
+      s.email?.toLowerCase().includes(query) ||
+      (s.studentId || `MEM-${s.id}`).toLowerCase().includes(query);
+
+    const matchesDept = !selectedDept || selectedDept === "All" || s.department === selectedDept;
+    const matchesRole = !selectedRole || selectedRole === "All" || s.role === selectedRole;
+    const matchesStatus =
+      statusFilter === "All" || (s.status || "active").toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesDept && matchesRole && matchesStatus;
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
-  const totalPages = Math.ceil((students || []).length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-  const currentStudents = (students || []).slice(
+  const currentStudents = filteredStudents.slice(
     (validCurrentPage - 1) * ITEMS_PER_PAGE,
     validCurrentPage * ITEMS_PER_PAGE
   );
@@ -68,15 +106,8 @@ export default function ManageUsersView() {
     setEditMember(null);
   };
 
-  const handleCloseRegisterForm = () => {
-    setSearchParams((prev) => {
-      prev.delete("register");
-      return prev;
-    });
-  };
-
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+    <div className="max-w-7xl mx-auto space-y-4 pt-1 pb-12 select-none">
       {/* Conditionally Render User Registration Form OR Manage Users Table */}
       {showRegisterForm ? (
         <div className="bg-indigo-50/30 p-4 sm:p-6 rounded-2xl border border-indigo-900/10 transition-all duration-300">
@@ -87,7 +118,66 @@ export default function ManageUsersView() {
         </div>
       ) : (
         <>
-          {/* Members Table */}
+          {/* Controls Toolbar: Search, Filters & Add Action */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                <input
+                  type="text"
+                  placeholder="Search name, email, ID..."
+                  value={searchQuery || ""}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                />
+              </div>
+
+              <select
+                value={selectedRole || "All"}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50 cursor-pointer"
+              >
+                <option value="All">All Roles</option>
+                <option value="Student">Student</option>
+                <option value="Teacher">Teacher</option>
+                <option value="Staff">Staff</option>
+              </select>
+
+              {departmentOptions.length > 0 && (
+                <select
+                  value={selectedDept || "All"}
+                  onChange={(e) => setSelectedDept(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50 cursor-pointer"
+                >
+                  <option value="All">All Departments</option>
+                  {departmentOptions.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50 cursor-pointer"
+              >
+                <option value="All">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenRegisterForm}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-xs cursor-pointer"
+            >
+              <Plus size={15} /> Add Member
+            </button>
+          </div>
 
           {/* Members Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -171,7 +261,7 @@ export default function ManageUsersView() {
               <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
                 <span className="text-slate-500 font-medium">
                   Showing {(validCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                  {Math.min(validCurrentPage * ITEMS_PER_PAGE, (students || []).length)} of {(students || []).length} users
+                  {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} users
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -214,7 +304,7 @@ export default function ManageUsersView() {
                   <h3 className="font-bold text-slate-800 text-base">User Details</h3>
                   <button
                     onClick={() => setViewMember(null)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
                   >
                     <X size={18} />
                   </button>
@@ -266,7 +356,7 @@ export default function ManageUsersView() {
                   <button
                     type="button"
                     onClick={() => setEditMember(null)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
                   >
                     <X size={18} />
                   </button>
@@ -311,6 +401,7 @@ export default function ManageUsersView() {
                     >
                       <option value="Student">Student</option>
                       <option value="Teacher">Teacher</option>
+                      <option value="Staff">Staff</option>
                     </select>
                   </div>
                   <div>

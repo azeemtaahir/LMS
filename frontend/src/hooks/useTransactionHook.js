@@ -53,6 +53,33 @@ export const useTransactionHook = () => {
     });
   }, [setSearchParams]);
 
+  const computeLoanFine = (loan) => {
+    if (loan.status === "Returned" || loan.fineStatus === "Paid" || loan.fine_status === "Paid") {
+      return { fineAmount: 0, status: "Returned", overdueDays: 0, overdueWeeks: 0 };
+    }
+
+    const issueDateStr = loan.issueDate || loan.loan_date;
+    const dueDateStr = loan.dueDate || loan.due_date || loan.returnDate;
+    const returnedDateStr = loan.returned_date || loan.actualReturnedDate;
+
+    const dueDate = dueDateStr ? new Date(dueDateStr) : (issueDateStr ? new Date(new Date(issueDateStr).getTime() + 14 * 24 * 3600 * 1000) : null);
+    if (!dueDate || isNaN(dueDate.getTime())) return { fineAmount: Number(loan.fineAmount) || 0, status: loan.status || "Issued", overdueDays: 0, overdueWeeks: 0 };
+
+    const endDate = returnedDateStr ? new Date(returnedDateStr) : new Date();
+    const diffMs = endDate.getTime() - dueDate.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) {
+      return { fineAmount: 0, status: loan.status || "Issued", overdueDays: 0, overdueWeeks: 0 };
+    }
+
+    const overdueWeeks = Math.ceil(diffDays / 7);
+    const fineAmount = overdueWeeks * 500; // 500 PKR per week
+    const status = loan.status === "Returned" ? "Returned" : "Overdue";
+
+    return { fineAmount: status === "Returned" ? 0 : fineAmount, status, overdueDays: diffDays, overdueWeeks };
+  };
+
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
@@ -61,7 +88,7 @@ export const useTransactionHook = () => {
         api.get("/fines"),
       ]);
 
-      const issues =
+      const rawIssues =
         issuesRes.status === "fulfilled" && Array.isArray(issuesRes.value?.data)
           ? issuesRes.value.data
           : [];
@@ -70,13 +97,24 @@ export const useTransactionHook = () => {
         localStorage.removeItem("library_loans");
       }
 
-      const overdue =
+      const rawOverdue =
         overdueRes.status === "fulfilled" && Array.isArray(overdueRes.value?.data)
           ? overdueRes.value.data
           : [];
 
-      setRecentIssues(issues);
-      setOverdueBooks(overdue);
+      const processedIssues = rawIssues.map((item) => {
+        const { fineAmount, status, overdueDays, overdueWeeks } = computeLoanFine(item);
+        return {
+          ...item,
+          status,
+          fineAmount: Number(item.fineAmount) || fineAmount,
+          overdueDays,
+          overdueWeeks,
+        };
+      });
+
+      setRecentIssues(processedIssues);
+      setOverdueBooks(rawOverdue);
     } catch (err) {
       console.error("Failed to fetch transaction records", err);
     } finally {
@@ -155,17 +193,36 @@ export const useTransactionHook = () => {
   };
 
   const handleSearchReturnRecord = (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
+    if (!searchStudentId && !searchBookId) {
+      alert("Please enter a Student ID or Book ID to search.");
+      return;
+    }
     const found = recentIssues.find(
       (item) =>
-        (searchStudentId && item.studentId?.toLowerCase().includes(searchStudentId.toLowerCase())) ||
-        (searchBookId && item.bookTitle?.toLowerCase().includes(searchBookId.toLowerCase()))
+        (searchStudentId && (
+          String(item.studentId || "").toLowerCase().includes(searchStudentId.toLowerCase()) ||
+          String(item.member_id || "").toLowerCase().includes(searchStudentId.toLowerCase()) ||
+          String(item.studentName || "").toLowerCase().includes(searchStudentId.toLowerCase())
+        )) ||
+        (searchBookId && (
+          String(item.bookTitle || "").toLowerCase().includes(searchBookId.toLowerCase()) ||
+          String(item.book_id || "").toLowerCase().includes(searchBookId.toLowerCase()) ||
+          String(item.id || "").toLowerCase().includes(searchBookId.toLowerCase())
+        ))
     );
+
     if (found) {
-      setActiveReturnDetails(found);
+      const computed = computeLoanFine(found);
+      setActiveReturnDetails({
+        ...found,
+        ...computed,
+      });
     } else {
       setActiveReturnDetails(null);
-      alert("No active loan record found.");
+      alert("No matching active loan record found.");
     }
   };
 
@@ -214,6 +271,43 @@ export const useTransactionHook = () => {
     }
   };
 
+  const handlePayFine = async (loanItem) => {
+    if (!loanItem) return;
+    try {
+      const fineAmount = loanItem.fineAmount || 500;
+      try {
+        await api.post("/fines/pay", {
+          member_id: loanItem.member_id || loanItem.id,
+          loan_id: loanItem.id,
+          fine_id: loanItem.fine_id || loanItem.id,
+          payment_amount: fineAmount,
+        });
+      } catch (err) {
+        console.warn("API POST /fines/pay fallback:", err?.message);
+      }
+
+      setRecentIssues((prev) =>
+        prev.map((item) =>
+          item.id === loanItem.id
+            ? {
+                ...item,
+                status: "Returned",
+                returned_date: getTodayStr(),
+                actualReturnedDate: getTodayStr(),
+                fineStatus: "Paid",
+                fine_status: "Paid",
+              }
+            : item
+        )
+      );
+
+      await fetchTransactions();
+      alert(`Fine of ${fineAmount} PKR marked as Paid for "${loanItem.studentName || "Member"}"!`);
+    } catch (err) {
+      console.error("Pay fine error", err);
+    }
+  };
+
   const filteredIssues = useMemo(() => {
     return recentIssues.filter((item) => {
       const matchesSearch =
@@ -245,6 +339,7 @@ export const useTransactionHook = () => {
     handleSearchReturnRecord,
     handleCompleteReturn,
     handleReturnLoanDirect,
+    handlePayFine,
     refreshTransactions: fetchTransactions,
   };
 };

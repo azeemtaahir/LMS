@@ -60,7 +60,7 @@ export default function LibrarianDashboardView() {
               className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all border border-slate-700/80 cursor-pointer"
             >
               <BookDown size={15} />
-              <span>Return Book</span>
+              <span>Fine Book</span>
             </button>
           </div>
         </div>
@@ -86,15 +86,15 @@ export default function LibrarianDashboardView() {
 
       {/* Circulation Logs */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white border-b border-indigo-900/40">
           <div>
-            <h2 className="text-sm font-bold text-slate-800">Recent Circulation Logs</h2>
-            <p className="text-xs text-slate-400">Real-time status of issued and returned items.</p>
+            <h2 className="text-sm font-bold text-white tracking-tight">Recent Circulation Logs</h2>
+            <p className="text-xs text-slate-300">Real-time status of issued and returned items.</p>
           </div>
           
           <button 
             onClick={() => navigate('/issued-lib')}
-            className="text-xs text-indigo-600 font-semibold hover:text-indigo-700 self-start sm:self-auto"
+            className="text-xs text-indigo-300 font-semibold hover:text-white self-start sm:self-auto flex items-center gap-1 transition-colors cursor-pointer"
           >
             View Issued Books →
           </button>
@@ -103,7 +103,7 @@ export default function LibrarianDashboardView() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <tr className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 text-[11px] font-semibold uppercase tracking-wider border-b border-indigo-950">
                 <th className="py-3.5 px-5">TX ID</th>
                 <th className="py-3.5 px-5">Member Name</th>
                 <th className="py-3.5 px-5">Book Title</th>
@@ -113,7 +113,7 @@ export default function LibrarianDashboardView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {recentTransactions.map((tx) => (
+              {recentTransactions.slice(0, 4).map((tx) => (
                 <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="py-3.5 px-5 font-mono text-slate-500 font-medium">{tx.id}</td>
                   <td className="py-3.5 px-5 font-semibold text-slate-800">{tx.member}</td>

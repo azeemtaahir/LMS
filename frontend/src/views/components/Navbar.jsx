@@ -15,7 +15,7 @@ export default function Navbar({ onToggleSidebar }) {
     if (path === "/users" || path.includes("users/manage")) return "Manage Users";
     if (path === "/librarians" || path.includes("librarians/manage")) return "Manage Librarians";
     if (path === "/issue" || path === "/issue-lib") return "Issue Book";
-    if (path === "/return" || path === "/return-lib") return "Return Book";
+    if (path === "/return" || path === "/return-lib") return "Fine Book";
     if (path === "/issued" || path === "/issued-lib") return "Issued Books";
     if (path === "/reports" || path === "/reports-lib") return "Reports & Analytics";
     if (path === "/settings") return "Settings";

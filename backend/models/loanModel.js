@@ -1,11 +1,13 @@
 import lms from '../config/db.js';
+import { FineModel } from './fineModel.js';
 
 export class LoanModel {
-  constructor({ id, book_id, member_id, loan_date, returned_date }) {
+  constructor({ id, book_id, member_id, loan_date, due_date, returned_date }) {
     this.id = id;
     this.book_id = book_id;
     this.member_id = member_id;
     this.loan_date = loan_date;
+    this.due_date = due_date;
     this.returned_date = returned_date;
   }
 
@@ -24,20 +26,32 @@ export class LoanModel {
   }
 
   static async findAll() {
+    // Synchronize fines first to ensure DB persistence
+    await FineModel.syncOverdueFines();
+
     const result = await lms.query(`
       SELECT 
         l.id,
         l.book_id,
         l.member_id,
         l.loan_date,
+        l.due_date,
         l.returned_date,
         b.title AS "bookTitle",
         b.title AS "book_title",
         COALESCE(TRIM(CONCAT(m.first_name, ' ', m.last_name)), m.email, 'Student') AS "studentName",
         m.user_id AS "studentId",
-        CASE WHEN l.returned_date IS NOT NULL THEN 'Returned' ELSE 'Issued' END AS status,
+        CASE 
+          WHEN l.returned_date IS NOT NULL THEN 'Returned' 
+          WHEN CURRENT_DATE > COALESCE(l.due_date, (l.loan_date + 14)::date) THEN 'Overdue'
+          ELSE 'Issued' 
+        END AS status,
         TO_CHAR(l.loan_date, 'YYYY-MM-DD') AS "issueDate",
-        TO_CHAR(l.returned_date, 'YYYY-MM-DD') AS "returnDate"
+        TO_CHAR(COALESCE(l.due_date, (l.loan_date + 14)::date), 'YYYY-MM-DD') AS "dueDate",
+        TO_CHAR(COALESCE(l.due_date, (l.loan_date + 14)::date), 'YYYY-MM-DD') AS "returnDate",
+        TO_CHAR(l.returned_date, 'YYYY-MM-DD') AS "actualReturnedDate",
+        GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date))) AS "overdueDays",
+        CEIL(GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date)))::numeric / 7.0) * 500 AS "fineAmount"
       FROM loan l
       LEFT JOIN book b ON l.book_id = b.id
       LEFT JOIN member m ON l.member_id = m.id
@@ -51,6 +65,7 @@ export class LoanModel {
     const rawMemberId = data.member_id || data.memberId || data.studentId;
     const studentId = data.studentId || rawMemberId;
     const studentName = data.studentName;
+    const dueDateVal = data.dueDate || data.returnDate;
 
     let effectiveMemberId = null;
 
@@ -127,23 +142,39 @@ export class LoanModel {
       } catch (e) {}
     }
 
-    const result = await lms.query(
-      'INSERT INTO loan (book_id, member_id) VALUES ($1, $2) RETURNING *',
-      [effectiveBookId, effectiveMemberId]
-    );
+    let result;
+    if (dueDateVal) {
+      result = await lms.query(
+        'INSERT INTO loan (book_id, member_id, due_date) VALUES ($1, $2, $3) RETURNING *',
+        [effectiveBookId, effectiveMemberId, dueDateVal]
+      );
+    } else {
+      result = await lms.query(
+        'INSERT INTO loan (book_id, member_id, due_date) VALUES ($1, $2, CURRENT_DATE + 14) RETURNING *',
+        [effectiveBookId, effectiveMemberId]
+      );
+    }
+
     const newLoan = result.rows[0];
+
+    // Trigger sync in case loan is created as past due
+    await FineModel.syncOverdueFines();
+
     const fullResult = await lms.query(`
       SELECT 
         l.id,
         l.book_id,
         l.member_id,
         l.loan_date,
+        l.due_date,
         l.returned_date,
         b.title AS "bookTitle",
         COALESCE(TRIM(CONCAT(m.first_name, ' ', m.last_name)), m.email, 'Student') AS "studentName",
         m.user_id AS "studentId",
         'Issued' AS status,
-        TO_CHAR(l.loan_date, 'YYYY-MM-DD') AS "issueDate"
+        TO_CHAR(l.loan_date, 'YYYY-MM-DD') AS "issueDate",
+        TO_CHAR(COALESCE(l.due_date, (l.loan_date + 14)::date), 'YYYY-MM-DD') AS "dueDate",
+        TO_CHAR(COALESCE(l.due_date, (l.loan_date + 14)::date), 'YYYY-MM-DD') AS "returnDate"
       FROM loan l
       LEFT JOIN book b ON l.book_id = b.id
       LEFT JOIN member m ON l.member_id = m.id
@@ -157,7 +188,7 @@ export class LoanModel {
       'UPDATE loan SET returned_date = CURRENT_DATE WHERE id = $1 RETURNING *',
       [id]
     );
+    await FineModel.syncOverdueFines();
     return result.rows[0] || null;
   }
 }
-
