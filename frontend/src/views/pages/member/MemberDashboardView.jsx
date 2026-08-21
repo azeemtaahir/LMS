@@ -4,7 +4,6 @@ import { useAuth } from "../../../context/AuthContext";
 import { useBookController } from "../../../hooks/useBookHook";
 import BookCoverImage from "../../components/BookCoverImage";
 import {
-  BookOpen,
   BookMarked,
   AlertTriangle,
   CheckCircle2,
