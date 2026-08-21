@@ -10,14 +10,14 @@ export default function LibrarianNavbar({ onToggleSidebar }) {
   const user = lmsUser || (authUser && authUser.role === 'Librarian' ? authUser : { name: authUser?.name || 'Librarian', role: 'Librarian' });
 
   const getPageTitle = (path) => {
-    if (path === "/librarian/books/manage") return "Manage Books";
-    if (path === "/librarian/transactions/issue") return "Issue Book";
-    if (path === "/librarian/transactions/return") return "Return Book";
-    if (path === "/librarian/transactions/issued") return "Issued Books";
-    if (path === "/librarian/reports") return "Reports & Analytics";
-    if (path.includes("/librarian/books")) return "Manage Books";
-    if (path.includes("/librarian/transactions")) return "Transactions";
-    if (path.includes("/librarian/dashboard")) return "Dashboard Overview";
+    if (path === "/manage-lib" || path === "/librarian/manage-lib" || path === "/managelib") return "Manage Books";
+    if (path === "/issue-lib" || path === "/librarian/issue-lib") return "Issue Book";
+    if (path === "/return-lib" || path === "/librarian/return-lib") return "Return Book";
+    if (path === "/issued-lib" || path === "/librarian/issued-lib") return "Issued Books";
+    if (path === "/reports-lib" || path === "/librarian/reports-lib") return "Reports & Analytics";
+    if (path.includes("manage-lib")) return "Manage Books";
+    if (path.includes("issue-lib") || path.includes("return-lib") || path.includes("issued-lib")) return "Transactions";
+    if (path.includes("dashboard")) return "Dashboard Overview";
     return "Dashboard Overview";
   };
 

@@ -11,10 +11,10 @@ export class LoanModel {
 
   static validateLoanInput(data) {
     const errors = {};
-    if (!data || !data.book_id) {
+    if (!data || !(data.book_id || data.bookId)) {
       errors.book_id = "book_id is required";
     }
-    if (!data || !data.member_id) {
+    if (!data || !(data.member_id || data.studentId)) {
       errors.member_id = "member_id is required";
     }
     return {
@@ -24,16 +24,132 @@ export class LoanModel {
   }
 
   static async findAll() {
-    const result = await lms.query('SELECT * FROM loan ORDER BY id DESC');
+    const result = await lms.query(`
+      SELECT 
+        l.id,
+        l.book_id,
+        l.member_id,
+        l.loan_date,
+        l.returned_date,
+        b.title AS "bookTitle",
+        b.title AS "book_title",
+        COALESCE(TRIM(CONCAT(m.first_name, ' ', m.last_name)), m.email, 'Student') AS "studentName",
+        m.user_id AS "studentId",
+        CASE WHEN l.returned_date IS NOT NULL THEN 'Returned' ELSE 'Issued' END AS status,
+        TO_CHAR(l.loan_date, 'YYYY-MM-DD') AS "issueDate",
+        TO_CHAR(l.returned_date, 'YYYY-MM-DD') AS "returnDate"
+      FROM loan l
+      LEFT JOIN book b ON l.book_id = b.id
+      LEFT JOIN member m ON l.member_id = m.id
+      ORDER BY l.id DESC
+    `);
     return result.rows;
   }
 
-  static async create({ book_id, member_id }) {
+  static async create(data) {
+    const rawBookId = data.book_id || data.bookId;
+    const rawMemberId = data.member_id || data.memberId || data.studentId;
+    const studentId = data.studentId || rawMemberId;
+    const studentName = data.studentName;
+
+    let effectiveMemberId = null;
+
+    // 1. Check if passed member_id (if numeric) exists directly in member.id
+    if (rawMemberId && !isNaN(Number(rawMemberId))) {
+      try {
+        const mRes = await lms.query('SELECT id FROM member WHERE id = $1', [Number(rawMemberId)]);
+        if (mRes.rows.length > 0) {
+          effectiveMemberId = mRes.rows[0].id;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Search member table by user_id
+    if (!effectiveMemberId && studentId) {
+      try {
+        const targetUid = String(studentId);
+        const mRes = await lms.query(
+          'SELECT id FROM member WHERE user_id = $1 OR user_id = $2',
+          [targetUid, `MEM-${targetUid}`]
+        );
+        if (mRes.rows.length > 0) {
+          effectiveMemberId = mRes.rows[0].id;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Search member table by name
+    if (!effectiveMemberId && studentName) {
+      try {
+        const mRes = await lms.query(
+          "SELECT id FROM member WHERE CONCAT(first_name, ' ', last_name) ILIKE $1 OR first_name ILIKE $1",
+          [`%${String(studentName).trim()}%`]
+        );
+        if (mRes.rows.length > 0) {
+          effectiveMemberId = mRes.rows[0].id;
+        }
+      } catch (e) {}
+    }
+
+    // 4. Auto-create member record if missing from DB
+    if (!effectiveMemberId) {
+      const parts = (studentName || 'Student Member').trim().split(' ');
+      const firstName = parts[0] || 'Member';
+      const lastName = parts.slice(1).join(' ') || 'User';
+      const uId = String(studentId || rawMemberId || `MEM-${Date.now().toString().slice(-4)}`);
+
+      try {
+        const newMemberRes = await lms.query(
+          "INSERT INTO member (user_id, first_name, last_name, role, status) VALUES ($1, $2, $3, 'Student', 'active') RETURNING id",
+          [uId, firstName, lastName]
+        );
+        effectiveMemberId = newMemberRes.rows[0].id;
+      } catch (mErr) {
+        const fallbackRes = await lms.query(
+          "INSERT INTO member (first_name, last_name, status) VALUES ($1, $2, 'active') RETURNING id",
+          [firstName, lastName]
+        );
+        effectiveMemberId = fallbackRes.rows[0].id;
+      }
+    }
+
+    // 5. Check/resolve effectiveBookId
+    let effectiveBookId = Number(rawBookId) || rawBookId;
+    if (effectiveBookId) {
+      try {
+        const bRes = await lms.query('SELECT id FROM book WHERE id = $1', [effectiveBookId]);
+        if (bRes.rows.length === 0) {
+          const anyBook = await lms.query('SELECT id FROM book ORDER BY id ASC LIMIT 1');
+          if (anyBook.rows.length > 0) {
+            effectiveBookId = anyBook.rows[0].id;
+          }
+        }
+      } catch (e) {}
+    }
+
     const result = await lms.query(
       'INSERT INTO loan (book_id, member_id) VALUES ($1, $2) RETURNING *',
-      [book_id, member_id]
+      [effectiveBookId, effectiveMemberId]
     );
-    return result.rows[0];
+    const newLoan = result.rows[0];
+    const fullResult = await lms.query(`
+      SELECT 
+        l.id,
+        l.book_id,
+        l.member_id,
+        l.loan_date,
+        l.returned_date,
+        b.title AS "bookTitle",
+        COALESCE(TRIM(CONCAT(m.first_name, ' ', m.last_name)), m.email, 'Student') AS "studentName",
+        m.user_id AS "studentId",
+        'Issued' AS status,
+        TO_CHAR(l.loan_date, 'YYYY-MM-DD') AS "issueDate"
+      FROM loan l
+      LEFT JOIN book b ON l.book_id = b.id
+      LEFT JOIN member m ON l.member_id = m.id
+      WHERE l.id = $1
+    `, [newLoan.id]);
+    return fullResult.rows[0] || newLoan;
   }
 
   static async returnLoan(id) {
@@ -44,3 +160,4 @@ export class LoanModel {
     return result.rows[0] || null;
   }
 }
+

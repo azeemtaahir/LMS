@@ -54,7 +54,7 @@ export default function MemberDashboardView() {
 
           <div className="flex gap-2">
             <Link
-              to="/member/search"
+              to="/search"
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 inline-flex items-center gap-1.5"
             >
               <Search size={14} />
@@ -122,7 +122,7 @@ export default function MemberDashboardView() {
               <span>My Active Borrowed Books</span>
             </div>
             <Link
-              to="/member/my-books"
+              to="/my-books"
               className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
             >
               View My Books <ArrowRight size={14} />
@@ -189,7 +189,7 @@ export default function MemberDashboardView() {
               <span>Catalog Suggestions</span>
             </div>
             <Link
-              to="/member/search"
+              to="/search"
               className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
             >
               Search All <ArrowRight size={14} />

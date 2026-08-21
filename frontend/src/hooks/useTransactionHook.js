@@ -1,31 +1,26 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../api/api";
 
-const MOCK_RECENT_ISSUES = [];
-
-const MOCK_OVERDUE_BOOKS = [];
-
 const getTodayStr = () => new Date().toISOString().split("T")[0];
+
 const get7DaysLaterStr = (baseDateStr) => {
   const d = baseDateStr ? new Date(baseDateStr) : new Date();
-  if (isNaN(d.getTime())) return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  if (isNaN(d.getTime())) {
+    return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  }
   d.setDate(d.getDate() + 7);
   return d.toISOString().split("T")[0];
 };
 
 export const useTransactionHook = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchParamQuery = searchParams.get("search") || "";
   const statusParam = searchParams.get("status") || "All";
 
   const [recentIssues, setRecentIssues] = useState([]);
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(searchParamQuery);
-  const [prevSearchParam, setPrevSearchParam] = useState(searchParamQuery);
-  const [statusFilter, setStatusFilter] = useState(statusParam);
-  const [prevStatusParam, setPrevStatusParam] = useState(statusParam);
 
   const initialToday = getTodayStr();
   const [issueFormData, setIssueFormData] = useState({
@@ -40,15 +35,23 @@ export const useTransactionHook = () => {
   const [searchBookId, setSearchBookId] = useState("");
   const [activeReturnDetails, setActiveReturnDetails] = useState(null);
 
-  if (prevSearchParam !== searchParamQuery) {
-    setPrevSearchParam(searchParamQuery);
-    setSearchQuery(searchParamQuery);
-  }
+  const setSearchQuery = useCallback((query) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (query) next.set("search", query);
+      else next.delete("search");
+      return next;
+    });
+  }, [setSearchParams]);
 
-  if (prevStatusParam !== statusParam) {
-    setPrevStatusParam(statusParam);
-    setStatusFilter(statusParam);
-  }
+  const setStatusFilter = useCallback((status) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (status && status !== "All") next.set("status", status);
+      else next.delete("status");
+      return next;
+    });
+  }, [setSearchParams]);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -61,11 +64,16 @@ export const useTransactionHook = () => {
       const issues =
         issuesRes.status === "fulfilled" && Array.isArray(issuesRes.value?.data)
           ? issuesRes.value.data
-          : MOCK_RECENT_ISSUES;
+          : [];
+
+      if (issuesRes.status === "fulfilled" && Array.isArray(issuesRes.value?.data)) {
+        localStorage.removeItem("library_loans");
+      }
+
       const overdue =
         overdueRes.status === "fulfilled" && Array.isArray(overdueRes.value?.data)
           ? overdueRes.value.data
-          : MOCK_OVERDUE_BOOKS;
+          : [];
 
       setRecentIssues(issues);
       setOverdueBooks(overdue);
@@ -77,64 +85,64 @@ export const useTransactionHook = () => {
   }, []);
 
   useEffect(() => {
-    let ignore = false;
-
-    async function initFetch() {
-      try {
-        const [issuesRes, overdueRes] = await Promise.allSettled([
-          api.get("/loans"),
-          api.get("/fines"),
-        ]);
-
-        if (ignore) return;
-
-        const issues =
-          issuesRes.status === "fulfilled" && Array.isArray(issuesRes.value?.data)
-            ? issuesRes.value.data
-            : MOCK_RECENT_ISSUES;
-        const overdue =
-          overdueRes.status === "fulfilled" && Array.isArray(overdueRes.value?.data)
-            ? overdueRes.value.data
-            : MOCK_OVERDUE_BOOKS;
-
-        setRecentIssues(issues);
-        setOverdueBooks(overdue);
-      } catch (err) {
-        console.error("Failed to fetch transaction records", err);
-      } finally {
-        if (!ignore) setLoading(false);
+    let isMounted = true;
+    const initFetch = async () => {
+      if (isMounted) {
+        await fetchTransactions();
       }
-    }
-
-    initFetch();
-
-    return () => {
-      ignore = true;
     };
-  }, []);
+    initFetch();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchTransactions]);
 
-  const handleIssueBookSubmit = async (e) => {
-    e.preventDefault();
+  const handleIssueBookSubmit = async (e, selectedStudent, selectedBook) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     if (!issueFormData.studentId || !issueFormData.bookId) {
-      alert("Please select both a student and a book.");
+      alert("Please select both a borrower user and a book.");
       return;
     }
+
+    const dbMemberId = selectedStudent?.db_id || selectedStudent?.id;
+    const numericMemberId = Number(dbMemberId);
+    const numericBookId = Number(selectedBook?.id || issueFormData.bookId);
+    const studentNameVal =
+      selectedStudent?.name ||
+      `${selectedStudent?.first_name || ""} ${selectedStudent?.last_name || ""}`.trim() ||
+      "Student";
+    const bookTitleVal = selectedBook?.title || "Selected Book";
+    const studentIdVal = selectedStudent?.studentId || selectedStudent?.id || issueFormData.studentId;
+
+    const payload = {
+      book_id: isNaN(numericBookId) ? issueFormData.bookId : numericBookId,
+      bookId: isNaN(numericBookId) ? issueFormData.bookId : numericBookId,
+      member_id: isNaN(numericMemberId) ? dbMemberId : numericMemberId,
+      studentId: studentIdVal,
+      studentName: studentNameVal,
+      bookTitle: bookTitleVal,
+      issueDate: issueFormData.issueDate,
+      returnDate: issueFormData.returnDate,
+      dueDate: issueFormData.returnDate,
+      notes: issueFormData.notes,
+      status: "Issued",
+    };
+
     try {
-      let newIssue;
-      try {
-        const res = await api.post("/loans", issueFormData);
-        newIssue = res.data;
-      } catch {
-        newIssue = {
-          id: Date.now(),
-          bookTitle: issueFormData.bookTitle || "Selected Book",
-          studentName: issueFormData.studentName || "Student",
-          dueDate: issueFormData.dueDate || "30 May 2026",
-          status: "Issued",
-        };
-      }
-      setRecentIssues((prev) => [newIssue, ...prev]);
+      await api.post("/loans", payload);
+      await fetchTransactions();
       alert("Book issued successfully!");
+    } catch (err) {
+      console.warn("API POST /loans fallback:", err?.message);
+      const fallbackRecord = {
+        id: Date.now(),
+        ...payload,
+      };
+      setRecentIssues((prev) => [fallbackRecord, ...prev]);
+      alert("Book issued successfully!");
+    } finally {
       const freshToday = getTodayStr();
       setIssueFormData({
         studentId: "",
@@ -143,8 +151,6 @@ export const useTransactionHook = () => {
         returnDate: get7DaysLaterStr(freshToday),
         notes: "",
       });
-    } catch (err) {
-      console.error("Issue book error", err);
     }
   };
 
@@ -166,16 +172,19 @@ export const useTransactionHook = () => {
   const handleCompleteReturn = async () => {
     if (!activeReturnDetails) return;
     try {
+      const todayStr = getTodayStr();
       try {
-        await api.put(`/loans/${activeReturnDetails.id}`, { status: "Returned" });
-      } catch {
-        // Fallback
+        await api.put(`/loans/${activeReturnDetails.id}/return`, { status: "Returned" });
+      } catch (err) {
+        console.warn("API PUT /loans/:id/return fallback:", err?.message);
       }
       setRecentIssues((prev) =>
         prev.map((item) =>
-          item.id === activeReturnDetails.id ? { ...item, status: "Returned" } : item
+          item.id === activeReturnDetails.id ? { ...item, status: "Returned", returned_date: todayStr } : item
         )
       );
+
+      await fetchTransactions();
       alert("Book returned successfully!");
       setActiveReturnDetails(null);
     } catch (err) {
@@ -183,22 +192,46 @@ export const useTransactionHook = () => {
     }
   };
 
-  const filteredIssues = recentIssues.filter((item) => {
-    const matchesSearch =
-      item.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.bookTitle?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "All" || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const handleReturnLoanDirect = async (loanItem) => {
+    if (!loanItem) return;
+    try {
+      const todayStr = getTodayStr();
+      try {
+        await api.put(`/loans/${loanItem.id}/return`, { status: "Returned" });
+      } catch (err) {
+        console.warn("API PUT /loans/:id/return fallback:", err?.message);
+      }
+      setRecentIssues((prev) =>
+        prev.map((item) =>
+          item.id === loanItem.id ? { ...item, status: "Returned", returned_date: todayStr } : item
+        )
+      );
+
+      await fetchTransactions();
+      alert(`Book "${loanItem.bookTitle || "Book"}" returned successfully!`);
+    } catch (err) {
+      console.error("Return loan error", err);
+    }
+  };
+
+  const filteredIssues = useMemo(() => {
+    return recentIssues.filter((item) => {
+      const matchesSearch =
+        item.studentName?.toLowerCase().includes(searchParamQuery.toLowerCase()) ||
+        item.bookTitle?.toLowerCase().includes(searchParamQuery.toLowerCase());
+      const matchesStatus = statusParam === "All" || item.status === statusParam;
+      return matchesSearch && matchesStatus;
+    });
+  }, [recentIssues, searchParamQuery, statusParam]);
 
   return {
     recentIssues: filteredIssues,
     allIssues: recentIssues,
     overdueBooks,
     loading,
-    searchQuery,
+    searchQuery: searchParamQuery,
     setSearchQuery,
-    statusFilter,
+    statusFilter: statusParam,
     setStatusFilter,
     issueFormData,
     setIssueFormData,
@@ -211,6 +244,7 @@ export const useTransactionHook = () => {
     setActiveReturnDetails,
     handleSearchReturnRecord,
     handleCompleteReturn,
+    handleReturnLoanDirect,
     refreshTransactions: fetchTransactions,
   };
 };

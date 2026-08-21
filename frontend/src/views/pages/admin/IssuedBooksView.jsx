@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
-import { Search, Eye, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function IssuedBooksView() {
-  const { recentIssues, searchQuery, setSearchQuery, statusFilter, setStatusFilter } = useTransactionController();
+  const {
+    recentIssues,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    handleReturnLoanDirect,
+  } = useTransactionController();
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
@@ -16,6 +23,34 @@ export default function IssuedBooksView() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+      {/* Top Controls: Search Bar & Status Filter */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search issued books..."
+            value={searchQuery || ""}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500 transition-colors"
+          />
+        </div>
+
+        <div className="w-full sm:w-auto flex items-center gap-2">
+          <label className="text-xs font-semibold text-slate-600">Status:</label>
+          <select
+            value={statusFilter || "All"}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Issued">Issued</option>
+            <option value="Returned">Returned</option>
+            <option value="Overdue">Overdue</option>
+          </select>
+        </div>
+      </div>
+
       {/* Issued Books Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
@@ -60,18 +95,24 @@ export default function IssuedBooksView() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex items-center justify-center gap-2">
+                        {item.status === "Issued" ? (
+                          <button
+                            title="Return Book"
+                            onClick={() => handleReturnLoanDirect(item)}
+                            className="px-3 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition shadow-xs cursor-pointer"
+                          >
+                            Return
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-400 italic">Completed</span>
+                        )}
                         <button
-                          title="View Log Details"
-                          className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition"
+                          title="View Details"
+                          onClick={() => alert(`Issue Log Details:\nID: ${item.id}\nStudent: ${item.studentName}\nBook: ${item.bookTitle}\nIssue Date: ${item.issueDate}\nStatus: ${item.status}`)}
+                          className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
                         >
                           <Eye size={15} />
-                        </button>
-                        <button
-                          title="Edit Status"
-                          className="p-1.5 text-indigo-600 hover:text-indigo-900 rounded-md hover:bg-indigo-50 transition"
-                        >
-                          <Edit size={15} />
                         </button>
                       </div>
                     </td>
@@ -82,7 +123,7 @@ export default function IssuedBooksView() {
           </table>
         </div>
 
-        {/* Dynamic Pagination Footer - Only rendered when totalPages > 1 */}
+        {/* Dynamic Pagination Footer */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
             <span className="text-slate-500 font-medium">

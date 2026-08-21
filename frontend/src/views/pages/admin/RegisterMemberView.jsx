@@ -51,7 +51,7 @@ export default function RegisterUsersView({ onCancel, onSuccess }) {
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate("/admin/users/manage");
+        navigate("/users");
       }
     } catch (err) {
       alert(err.response?.data?.message || err.message || "Failed to register user");
@@ -62,7 +62,7 @@ export default function RegisterUsersView({ onCancel, onSuccess }) {
     if (onCancel) {
       onCancel();
     } else {
-      navigate("/admin/users/manage");
+      navigate("/users");
     }
   };
 

@@ -6,7 +6,8 @@ export const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
-      const savedUser = localStorage.getItem("user");
+      const savedUser =
+        localStorage.getItem("user") || localStorage.getItem("lms_user");
       return savedUser ? JSON.parse(savedUser) : null;
     } catch {
       return null;
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const loginUser = (userData) => {
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("lms_user", JSON.stringify(userData));
   };
 
   const logoutUser = () => {

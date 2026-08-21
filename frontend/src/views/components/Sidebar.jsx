@@ -13,7 +13,8 @@ export default function Sidebar({ isOpen, onClose }) {
   const user = authUser || JSON.parse(localStorage.getItem('user') || 'null') || JSON.parse(localStorage.getItem('lms_user') || 'null');
   const normRole = String(user?.role || '').toLowerCase().trim();
 
-  const isLibrarianRole = normRole.includes('librarian') || location.pathname.startsWith('/librarian');
+  const isLibrarianPath = location.pathname.startsWith('/librarian/') || location.pathname === '/librarian';
+  const isLibrarianRole = normRole.includes('librarian') || isLibrarianPath;
   const isMemberRole = normRole.includes('student') || normRole.includes('teacher') || normRole.includes('member');
   const isAdminRole = !isLibrarianRole && !isMemberRole;
 
@@ -36,21 +37,21 @@ export default function Sidebar({ isOpen, onClose }) {
         {
           heading: "MANAGE",
           items: [
-            { name: "Manage Books", path: "/librarian/books/manage", icon: BookOpen },
+            { name: "Manage Books", path: "/manage-lib", icon: BookOpen },
           ]
         },
         {
           heading: "CIRCULATION",
           items: [
-            { name: "Issue Book", path: "/librarian/transactions/issue", icon: BookUp },
-            { name: "Return Book", path: "/librarian/transactions/return", icon: BookDown },
-            { name: "Issued Books", path: "/librarian/transactions/issued", icon: BookMarked },
+            { name: "Issue Book", path: "/issue-lib", icon: BookUp },
+            { name: "Return Book", path: "/return-lib", icon: BookDown },
+            { name: "Issued Books", path: "/issued-lib", icon: BookMarked },
           ]
         },
         {
           heading: "REPORTS",
           items: [
-            { name: "Reports & Analytics", path: "/librarian/reports", icon: BarChart3 },
+            { name: "Reports & Analytics", path: "/reports-lib", icon: BarChart3 },
           ]
         }
       ];
@@ -65,24 +66,24 @@ export default function Sidebar({ isOpen, onClose }) {
         {
           heading: "MANAGEMENT",
           items: [
-            { name: "Manage Books", path: "/admin/books/manage", icon: BookOpen },
-            { name: "Manage Users", path: "/admin/users/manage", icon: Users },
-            { name: "Manage Librarians", path: "/admin/librarians/manage", icon: UserCheck },
+            { name: "Manage Books", path: "/manage", icon: BookOpen },
+            { name: "Manage Users", path: "/users", icon: Users },
+            { name: "Manage Librarians", path: "/librarians", icon: UserCheck },
           ]
         },
         {
           heading: "CIRCULATION",
           items: [
-            { name: "Issue Book", path: "/admin/transactions/issue", icon: BookUp },
-            { name: "Return Book", path: "/admin/transactions/return", icon: BookDown },
-            { name: "Issued Books", path: "/admin/transactions/issued", icon: BookMarked },
+            { name: "Issue Book", path: "/issue", icon: BookUp },
+            { name: "Return Book", path: "/return", icon: BookDown },
+            { name: "Issued Books", path: "/issued", icon: BookMarked },
           ]
         },
         {
           heading: "REPORTS & SYSTEM",
           items: [
-            { name: "Reports & Analytics", path: "/admin/reports", icon: BarChart3 },
-            { name: "Settings", path: "/admin/settings", icon: Settings },
+            { name: "Reports & Analytics", path: "/reports", icon: BarChart3 },
+            { name: "Settings", path: "/settings", icon: Settings },
           ]
         }
       ];
@@ -97,9 +98,9 @@ export default function Sidebar({ isOpen, onClose }) {
         {
           heading: "USERS",
           items: [
-            { name: "Search Books", path: "/member/search", icon: Search },
-            { name: "My Borrowed Books", path: "/member/my-books", icon: BookMarked },
-            { name: "My Profile", path: "/member/profile", icon: User },
+            { name: "Search Books", path: "/search", icon: Search },
+            { name: "My Borrowed Books", path: "/my-books", icon: BookMarked },
+            { name: "My Profile", path: "/profile", icon: User },
           ]
         }
       ];

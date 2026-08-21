@@ -48,7 +48,7 @@ export default function LibrarianDashboardView() {
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button 
-              onClick={() => navigate('/librarian/transactions/issue')}
+              onClick={() => navigate('/issue-lib')}
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
             >
               <BookUp size={15} />
@@ -56,7 +56,7 @@ export default function LibrarianDashboardView() {
             </button>
             
             <button 
-              onClick={() => navigate('/librarian/transactions/return')}
+              onClick={() => navigate('/return-lib')}
               className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all border border-slate-700/80 cursor-pointer"
             >
               <BookDown size={15} />
@@ -93,7 +93,7 @@ export default function LibrarianDashboardView() {
           </div>
           
           <button 
-            onClick={() => navigate('/librarian/transactions/issued')}
+            onClick={() => navigate('/issued-lib')}
             className="text-xs text-indigo-600 font-semibold hover:text-indigo-700 self-start sm:self-auto"
           >
             View Issued Books →

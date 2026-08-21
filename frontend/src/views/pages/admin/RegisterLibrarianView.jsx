@@ -46,7 +46,7 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate("/admin/librarians/manage");
+        navigate("/librarians");
       }
     } catch (err) {
       alert(err.response?.data?.message || err.message || "Failed to register librarian");
@@ -57,7 +57,7 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
     if (onCancel) {
       onCancel();
     } else {
-      navigate("/admin/librarians/manage");
+      navigate("/librarians");
     }
   };
 

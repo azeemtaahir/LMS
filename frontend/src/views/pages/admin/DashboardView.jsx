@@ -61,7 +61,7 @@ export default function DashboardView() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              to="/admin/transactions/issue"
+              to="/issue"
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 inline-flex items-center gap-1.5"
             >
               <Upload size={14} />
@@ -196,7 +196,7 @@ export default function DashboardView() {
             </div>
 
             <Link
-              to="/admin/transactions/issued"
+              to="/issued"
               className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
             >
               View All
@@ -221,7 +221,7 @@ export default function DashboardView() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {recentIssues.map((item) => (
+                {recentIssues.slice(0, 4).map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-slate-50/80 transition-colors"
@@ -281,7 +281,7 @@ export default function DashboardView() {
               </div>
 
               <Link
-                to="/admin/users/manage"
+                to="/users"
                 className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
               >
                 View All

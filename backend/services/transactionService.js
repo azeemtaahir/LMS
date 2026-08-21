@@ -13,8 +13,13 @@ export const transactionService = {
       throw err;
     }
 
-    const { book_id, member_id } = loanData;
-    return await LoanModel.create({ book_id, member_id });
+    const rawBookId = loanData.book_id || loanData.bookId;
+    const rawMemberId = loanData.member_id || loanData.memberId || loanData.studentId;
+
+    const book_id = Number(rawBookId) || rawBookId;
+    const member_id = Number(rawMemberId) || rawMemberId;
+
+    return await LoanModel.create(loanData);
   },
 
   async returnLoan(id) {

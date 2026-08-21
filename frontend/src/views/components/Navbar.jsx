@@ -10,42 +10,34 @@ export default function Navbar({ onToggleSidebar }) {
   const currentSearch = searchParams.get("search") || "";
 
   const getPageTitle = (path) => {
-    if (path === "/admin/books/manage") return "Manage Books";
-    if (path === "/admin/books/add") return "Add Book";
-    if (path === "/admin/users/register" || path === "/admin/students/register") return "User Registration";
-    if (path === "/admin/users/manage" || path === "/admin/students/manage") return "Manage Users";
-    if (path === "/admin/librarians/register") return "Register Librarian";
-    if (path === "/admin/librarians/manage") return "Manage Librarians";
-    if (path === "/admin/transactions/issue") return "Issue Book";
-    if (path === "/admin/transactions/return") return "Return Book";
-    if (path === "/admin/transactions/issued") return "Issued Books";
-    if (path === "/admin/reports") return "Reports & Analytics";
-    if (path === "/admin/settings") return "Settings";
-    if (path === "/member/dashboard") return "Member Dashboard";
-    if (path === "/member/search") return "Search Books & Catalog";
-    if (path === "/member/my-books") return "My Borrowed Books";
-    if (path === "/member/profile") return "My Profile & Account";
-    if (path.includes("/admin/books")) return "Manage Books";
-    if (path.includes("/admin/users") || path.includes("/admin/students")) return "Manage Users";
-    if (path.includes("/admin/librarians")) return "Manage Librarians";
-    if (path.includes("/admin/transactions")) return "Transactions";
-    if (path.includes("/admin/dashboard")) return "Dashboard Overview";
-    if (path.includes("/member")) return "Member Portal";
+    if (path === "/manage" || path.includes("books/manage")) return "Manage Books";
+    if (path === "/manage-lib") return "Manage Books";
+    if (path === "/users" || path.includes("users/manage")) return "Manage Users";
+    if (path === "/librarians" || path.includes("librarians/manage")) return "Manage Librarians";
+    if (path === "/issue" || path === "/issue-lib") return "Issue Book";
+    if (path === "/return" || path === "/return-lib") return "Return Book";
+    if (path === "/issued" || path === "/issued-lib") return "Issued Books";
+    if (path === "/reports" || path === "/reports-lib") return "Reports & Analytics";
+    if (path === "/settings") return "Settings";
+    if (path === "/search") return "Search Books & Catalog";
+    if (path === "/my-books") return "My Borrowed Books";
+    if (path === "/profile") return "My Profile & Account";
+    if (path === "/dashboard") return "Dashboard Overview";
     return "Dashboard Overview";
   };
 
   const pageTitle = getPageTitle(location.pathname);
-  const isBooksPage = location.pathname.includes("/books");
-  const isUsersPage = location.pathname.includes("/users") || location.pathname.includes("/students");
-  const isLibrariansPage = location.pathname.includes("/librarians");
-  const isIssuedBooksPage = location.pathname.includes("/transactions/issued");
+  const isBooksPage = location.pathname.includes("/books") || location.pathname === "/manage" || location.pathname === "/manage-lib";
+  const isUsersPage = location.pathname.includes("/users") || location.pathname.includes("/students") || location.pathname === "/users";
+  const isLibrariansPage = location.pathname.includes("/librarians") || location.pathname === "/librarians";
+  const isIssuedBooksPage = location.pathname.includes("/transactions/issued") || location.pathname === "/issued" || location.pathname === "/issued-lib";
 
   const isAddBookOpen = searchParams.get("add") === "true";
   const isRegisterUserOpen = searchParams.get("register") === "true";
   const isRegisterLibrarianOpen = searchParams.get("register") === "true" || location.pathname === "/admin/librarians/register";
 
   const handleToggleAddBook = () => {
-    const basePath = location.pathname.includes("/librarian") ? "/librarian/books/manage" : "/admin/books/manage";
+    const basePath = (location.pathname.endsWith("-lib") || user?.role?.toLowerCase()?.includes("librarian")) ? "/manage-lib" : "/manage";
     if (isAddBookOpen) {
       navigate(basePath);
     } else {
@@ -54,7 +46,7 @@ export default function Navbar({ onToggleSidebar }) {
   };
 
   const handleToggleRegisterUser = () => {
-    const basePath = location.pathname.includes("/admin/users") ? "/admin/users/manage" : "/admin/students/manage";
+    const basePath = "/users";
     if (isRegisterUserOpen) {
       navigate(basePath);
     } else {
@@ -64,9 +56,9 @@ export default function Navbar({ onToggleSidebar }) {
 
   const handleToggleRegisterLibrarian = () => {
     if (isRegisterLibrarianOpen) {
-      navigate("/admin/librarians/manage");
+      navigate("/librarians");
     } else {
-      navigate("/admin/librarians/manage?register=true");
+      navigate("/librarians?register=true");
     }
   };
 
@@ -84,27 +76,28 @@ export default function Navbar({ onToggleSidebar }) {
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter" && currentSearch) {
       if (!location.pathname.includes("/manage") && !location.pathname.includes("/issued")) {
-        const basePath = location.pathname.startsWith("/librarian")
-          ? "/librarian/books/manage"
-          : "/admin/books/manage";
+        const basePath = (location.pathname.endsWith("-lib") || user?.role?.toLowerCase()?.includes("librarian"))
+          ? "/manage-lib"
+          : "/manage";
         navigate(`${basePath}?search=${encodeURIComponent(currentSearch)}`);
       }
     }
   };
 
-  const isAdminPath = location.pathname.startsWith("/admin");
-  const isLibrarianPath = location.pathname.startsWith("/librarian");
+  const userRoleNorm = String(user?.role || "").toLowerCase().trim();
+  const isAdminRole = userRoleNorm.includes("admin") || location.pathname.startsWith("/admin");
+  const isLibrarianRole = userRoleNorm.includes("librarian") || location.pathname.startsWith("/librarian/") || location.pathname.endsWith("-lib");
 
-  const profileName = user?.name || user?.username || (isAdminPath ? "System Admin" : isLibrarianPath ? "Librarian" : "Member");
+  const profileName = user?.name || user?.username || (isAdminRole ? "System Admin" : isLibrarianRole ? "Librarian Staff" : "Member");
 
-  const profileRole = isAdminPath
+  const profileRole = isAdminRole
     ? "Admin"
-    : isLibrarianPath
+    : isLibrarianRole
     ? "Librarian"
-    : (user?.role === "Teacher" ? "Teacher" : "Student");
+    : (user?.role || "Student");
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-20 transition-all gap-2">
+    <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-8 py-2 flex items-center justify-between sticky top-0 z-20 transition-all gap-2">
       {/* Left side: Mobile Toggle, Section Title & Search Input */}
       <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 max-w-2xl">
         <button

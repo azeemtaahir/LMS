@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useBookController } from "../../../hooks/useBookHook";
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import AddBookView from "./AddBookView";
 import api from "../../../api/api";
 
 export default function ManageBooksView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const isLibrarian = location.pathname.includes("/librarian");
+  const isLibrarian = location.pathname.startsWith("/librarian/");
   
-  // Directly derive state from URL search params (no useEffect or useState needed)
   const showAddForm = searchParams.get("add") === "true";
 
-  const { books, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, categoriesList, refreshBooks } =
-    useBookController();
+  const {
+    books,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    categoriesList,
+    refreshBooks
+  } = useBookController();
 
   const DEFAULT_CATEGORIES = [
     "Fiction",
@@ -140,11 +146,20 @@ export default function ManageBooksView() {
   };
 
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 7;
 
+  // Integrated searchQuery and selectedCategory filters
   const filteredBooks = (books || []).filter((book) => {
     const matchesStatus = statusFilter === "All" || book.status === statusFilter;
-    return matchesStatus;
+    const matchesCategory =
+      !selectedCategory || selectedCategory === "All" || book.category === selectedCategory;
+    const matchesSearch =
+      !searchQuery ||
+      book.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.isbn?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesStatus && matchesCategory && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
@@ -155,17 +170,16 @@ export default function ManageBooksView() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+    <div className="max-w-7xl mx-auto space-y-3 pt-1 pb-8 select-none">
       {/* Conditionally Render Add Book Form OR Manage Books Table */}
       {showAddForm ? (
         <div className="bg-amber-50/20 p-4 sm:p-6 rounded-2xl border border-amber-900/10 transition-all duration-300">
-          <AddBookView
-            onCancel={handleCloseAddForm}
-            onSuccess={handleCloseAddForm}
-          />
+          <AddBookView onCancel={handleCloseAddForm} onSuccess={handleCloseAddForm} />
         </div>
       ) : (
         <>
+
+
           {/* Books Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
@@ -184,7 +198,7 @@ export default function ManageBooksView() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {currentBooks.length === 0 ? (
                     <tr>
-                      <td colSpan={isLibrarian ? "6" : "7"} className="py-8 text-center text-slate-400">
+                      <td colSpan={isLibrarian ? 6 : 7} className="py-8 text-center text-slate-400">
                         No books found matching your criteria.
                       </td>
                     </tr>
@@ -243,7 +257,7 @@ export default function ManageBooksView() {
               </table>
             </div>
 
-            {/* Dynamic Pagination Footer - Only rendered when totalPages > 1 */}
+            {/* Dynamic Pagination Footer */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
                 <span className="text-slate-500 font-medium">

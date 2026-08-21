@@ -10,9 +10,9 @@ export default function AddBookView({ onCancel, onSuccess }) {
   const { categoriesList, refreshBooks } = useBookController();
 
   const getManageBooksPath = () =>
-    location.pathname.startsWith("/librarian")
-      ? "/librarian/books/manage"
-      : "/admin/books/manage";
+    location.pathname.startsWith("/librarian/") || location.pathname === "/librarian"
+      ? "/librarian/manage-lib"
+      : "/manage";
 
   const DEFAULT_CATEGORIES = [
     "Fiction",

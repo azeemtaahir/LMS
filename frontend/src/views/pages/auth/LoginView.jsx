@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuthController } from "../../../hooks/useAuthHook";
 import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
+import { useAuthController } from "../../../hooks/useAuthHook";
 import libraryBg from "../../../assets/images/library_bg.png";
 
 export default function LoginView() {
@@ -16,22 +16,22 @@ export default function LoginView() {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen h-[100dvh] w-[100dvw] overflow-hidden select-none font-sans">
-      {/* Background Image & Overlay Layer */}
+    <div className="fixed inset-0 w-full h-[100dvh] overflow-hidden select-none font-sans">
+      {/* Background Image & Overlay */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${libraryBg})` }}
       >
         <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
       </div>
 
-      {/* Foreground Scrollable Flex Wrapper */}
-      <div className="relative z-10 w-full h-full min-h-[100dvh] overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+      {/* Foreground Container */}
+      <div className="relative z-10 w-full h-full overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
         {/* Glassmorphism Login Card */}
         <div className="my-auto w-full max-w-md p-6 sm:p-8 md:p-10 rounded-3xl bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 shadow-2xl text-white shrink-0">
           <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold mb-6 transition"
+            to="/public-dashboard"
+            className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold mb-6 transition-colors"
           >
             <ArrowLeft size={14} /> Back to Catalog Dashboard
           </Link>
@@ -49,8 +49,11 @@ export default function LoginView() {
 
           {/* Server Error Alert */}
           {serverError && (
-            <div className="mb-4 sm:mb-6 p-3 bg-rose-500/20 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <span>⚠️</span>
+            <div
+              role="alert"
+              className="mb-4 sm:mb-6 p-3 bg-rose-500/20 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-semibold flex items-center gap-2"
+            >
+              <span aria-hidden="true">⚠️</span>
               <span>{serverError}</span>
             </div>
           )}
@@ -59,12 +62,16 @@ export default function LoginView() {
           <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
             {/* Email Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Email Address</label>
+              <label htmlFor="email" className="block text-xs font-bold text-slate-300 mb-1.5">
+                Email Address
+              </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                 <input
+                  id="email"
                   type="email"
                   name="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="abc@gmail.com"
@@ -76,12 +83,16 @@ export default function LoginView() {
 
             {/* Password Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Password</label>
+              <label htmlFor="password" className="block text-xs font-bold text-slate-300 mb-1.5">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
                   name="password"
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
@@ -89,8 +100,8 @@ export default function LoginView() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -103,7 +114,7 @@ export default function LoginView() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-6 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all duration-200 active:scale-98 disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer mt-4 sm:mt-6"
+              className="w-full py-3 px-6 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all duration-200 active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2 mt-4 sm:mt-6 cursor-pointer disabled:cursor-not-allowed"
             >
               <LogIn size={18} />
               <span>{loading ? "Logging in..." : "Log in"}</span>

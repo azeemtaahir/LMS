@@ -24,9 +24,9 @@ export default function MemberSidebar({ isOpen, onClose }) {
     {
       heading: "USERS / MEMBERS",
       items: [
-        { name: "Search Books", path: "/member/search", icon: Search },
-        { name: "My Borrowed Books", path: "/member/my-books", icon: BookMarked },
-        { name: "My Profile", path: "/member/profile", icon: User },
+        { name: "Search Books", path: "/search", icon: Search },
+        { name: "My Borrowed Books", path: "/my-books", icon: BookMarked },
+        { name: "My Profile", path: "/profile", icon: User },
       ],
     },
   ];

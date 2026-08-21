@@ -8,18 +8,26 @@ export default function IssueBookView() {
   const navigate = useNavigate();
   const location = useLocation();
   const { books } = useBookController();
-  const { students } = useMemberController();
+  const { students, allStudents } = useMemberController();
   const { issueFormData, setIssueFormData, handleIssueBookSubmit } = useTransactionController();
 
-  const selectedStudentObj = students.find((s) => String(s.id) === String(issueFormData.studentId));
+  const userList = (allStudents && allStudents.length > 0) ? allStudents : (students || []);
+
+  const selectedStudentObj = userList.find(
+    (s) =>
+      String(s.db_id) === String(issueFormData.studentId) ||
+      String(s.id) === String(issueFormData.studentId) ||
+      String(s.studentId) === String(issueFormData.studentId) ||
+      String(s.user_id) === String(issueFormData.studentId)
+  );
   const selectedBookObj = books.find((b) => String(b.id) === String(issueFormData.bookId));
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    await handleIssueBookSubmit(e);
-    const targetPath = location.pathname.startsWith("/librarian")
-      ? "/librarian/transactions/issued"
-      : "/admin/transactions/issued";
+    await handleIssueBookSubmit(e, selectedStudentObj, selectedBookObj);
+    const targetPath = location.pathname.startsWith("/librarian/")
+      ? "/librarian/issued-lib"
+      : "/issued";
     navigate(targetPath);
   };
 
@@ -40,11 +48,14 @@ export default function IssueBookView() {
                 required
               >
                 <option value="" className="bg-slate-900 text-white">Select borrower user</option>
-                {students.map((st) => (
-                  <option key={st.id} value={st.id} className="bg-slate-900 text-white">
-                    {st.name} — [{st.role || "Student"}] ({st.studentId})
-                  </option>
-                ))}
+                {userList.map((st, idx) => {
+                  const uVal = st.db_id || st.id || st.studentId || st.user_id;
+                  return (
+                    <option key={st.db_id || st.id || idx} value={uVal} className="bg-slate-900 text-white">
+                      {st.name} — [{st.role || "Student"}] ({st.studentId || st.user_id || uVal})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -64,15 +75,15 @@ export default function IssueBookView() {
                   </div>
                   <div>
                     <span className="font-semibold text-indigo-200">User ID:</span>{" "}
-                    {selectedStudentObj ? selectedStudentObj.studentId : "—"}
+                    {selectedStudentObj ? (selectedStudentObj.studentId || selectedStudentObj.user_id || selectedStudentObj.id) : "—"}
                   </div>
                   <div>
                     <span className="font-semibold text-indigo-200">Name:</span>{" "}
-                    {selectedStudentObj ? selectedStudentObj.name : "—"}
+                    {selectedStudentObj ? (selectedStudentObj.name || `${selectedStudentObj.first_name || ''} ${selectedStudentObj.last_name || ''}`.trim()) : "—"}
                   </div>
                   <div>
                     <span className="font-semibold text-indigo-200">Department:</span>{" "}
-                    {selectedStudentObj ? selectedStudentObj.department : "—"}{" "}
+                    {selectedStudentObj ? (selectedStudentObj.department || "CS") : "—"}{" "}
                     {selectedStudentObj?.designation ? `(${selectedStudentObj.designation})` : selectedStudentObj?.semester ? `(${selectedStudentObj.semester})` : ""}
                   </div>
                   <div>
@@ -81,7 +92,7 @@ export default function IssueBookView() {
                   </div>
                   <div>
                     <span className="font-semibold text-indigo-200">Phone:</span>{" "}
-                    {selectedStudentObj ? selectedStudentObj.phone || "1234567890" : "—"}
+                    {selectedStudentObj ? (selectedStudentObj.phone || "1234567890") : "—"}
                   </div>
                 </div>
               </div>

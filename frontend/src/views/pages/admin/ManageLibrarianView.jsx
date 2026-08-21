@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLibrarianController } from "../../../hooks/useLibrarianHook";
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import RegisterLibrarianView from "./RegisterLibrarianView";
 
 export default function ManageLibrarianView() {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Derive state directly from URL search params
   const showRegisterForm = searchParams.get("register") === "true";
 
@@ -91,7 +91,7 @@ export default function ManageLibrarianView() {
         </div>
       ) : (
         <>
-          {/* Librarians Table */}
+
 
           {/* Librarians Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -165,7 +165,7 @@ export default function ManageLibrarianView() {
               </table>
             </div>
 
-            {/* Dynamic Pagination Footer - Only rendered when totalPages > 1 */}
+            {/* Dynamic Pagination Footer */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
                 <span className="text-slate-500 font-medium">
@@ -310,9 +310,9 @@ export default function ManageLibrarianView() {
                   onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="active">Active</option>
-                  <option value="disabled">Disabled</option>
-                  <option value="locked">Locked</option>
+                  <option value="Active">Active</option>
+                  <option value="Disabled">Disabled</option>
+                  <option value="Locked">Locked</option>
                 </select>
               </div>
 
