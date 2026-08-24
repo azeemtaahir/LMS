@@ -1,10 +1,12 @@
-import { useLocation } from 'react-router-dom';
-import { Search, Bell, Menu } from 'lucide-react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, Bell, Menu, LogOut, Receipt } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LibrarianNavbar({ onToggleSidebar }) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, logoutUser } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const lmsUser = JSON.parse(localStorage.getItem('lms_user'));
 
   const user = lmsUser || (authUser && authUser.role === 'Librarian' ? authUser : { name: authUser?.name || 'Librarian', role: 'Librarian' });
@@ -22,6 +24,7 @@ export default function LibrarianNavbar({ onToggleSidebar }) {
   };
 
   const pageTitle = getPageTitle(location.pathname);
+  const isFineBookPage = location.pathname === "/return-lib" || location.pathname === "/return" || location.pathname.includes("return");
 
   return (
     <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
@@ -55,6 +58,29 @@ export default function LibrarianNavbar({ onToggleSidebar }) {
 
       {/* Action Buttons & Profile */}
       <div className="flex items-center gap-3 ml-auto">
+        {isFineBookPage && (
+          <button
+            onClick={() => {
+              const currentVal = searchParams.get("records") === "true";
+              const newParams = new URLSearchParams(searchParams);
+              if (currentVal) {
+                newParams.delete("records");
+              } else {
+                newParams.set("records", "true");
+              }
+              setSearchParams(newParams, { replace: true });
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
+              searchParams.get("records") === "true"
+                ? "bg-slate-800 text-white hover:bg-slate-900"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
+            }`}
+          >
+            <Receipt size={15} />
+            <span>{searchParams.get("records") === "true" ? "Pending Fines" : "Fine Records"}</span>
+          </button>
+        )}
+
         <button type="button" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 relative">
           <Bell size={18} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full"></span>

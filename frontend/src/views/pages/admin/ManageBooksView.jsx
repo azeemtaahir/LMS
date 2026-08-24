@@ -8,7 +8,7 @@ import api from "../../../api/api";
 export default function ManageBooksView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const isLibrarian = location.pathname.startsWith("/librarian/");
+  const isLibrarian = location.pathname.startsWith("/librarian/") || location.pathname === "/manage-lib" || location.pathname.endsWith("-lib");
   
   const showAddForm = searchParams.get("add") === "true";
 

@@ -1,9 +1,9 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Search, Bell, User as UserIcon, Menu, PlusCircle, UserPlus, X, Receipt } from "lucide-react";
+import { Search, Bell, User as UserIcon, Menu, PlusCircle, UserPlus, X, Receipt, LogOut } from "lucide-react";
 
 export default function Navbar({ onToggleSidebar }) {
-  const { user } = useAuth();
+  const { user, logoutUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
