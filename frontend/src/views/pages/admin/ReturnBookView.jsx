@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
-import { Eye, ChevronLeft, ChevronRight, CheckCircle2, DollarSign } from "lucide-react";
+import { Eye, ChevronLeft, ChevronRight, DollarSign } from "lucide-react";
 
 export default function ReturnBookView() {
   const {
@@ -12,10 +12,13 @@ export default function ReturnBookView() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  const records = (allIssues || []).filter((item) => {
+  const records = (allIssues || []).filter((item, index, self) => {
     const finePkr = Number(item.fineAmount) || 0;
-    const isPaidOrReturned = item.status === "Returned" || item.fineStatus === "Paid" || item.fine_status === "Paid";
-    return !isPaidOrReturned && (item.status === "Overdue" || finePkr > 0);
+    const isPaid = item.fineStatus === "Paid" || item.fine_status === "Paid";
+    const isReturned = item.status === "Returned";
+    if (isPaid || isReturned) return false;
+    const isFirst = self.findIndex((t) => t.id === item.id) === index;
+    return isFirst && (item.status === "Overdue" || finePkr > 0);
   });
   const totalPages = Math.ceil(records.length / ITEMS_PER_PAGE);
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
@@ -23,6 +26,23 @@ export default function ReturnBookView() {
     (validCurrentPage - 1) * ITEMS_PER_PAGE,
     validCurrentPage * ITEMS_PER_PAGE
   );
+
+  const getVisiblePages = (current, total, maxVisible = 3) => {
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, current - 1);
+    let end = start + maxVisible - 1;
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 pb-12 select-none">
@@ -128,7 +148,7 @@ export default function ReturnBookView() {
               >
                 <ChevronLeft size={16} />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              {getVisiblePages(validCurrentPage, totalPages, 3).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}

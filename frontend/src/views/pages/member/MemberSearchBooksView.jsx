@@ -38,7 +38,8 @@ export default function MemberSearchBooksView() {
       (b.category && b.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesCat = selectedCategory === "All" || b.category === selectedCategory;
-    const matchesAvail = availabilityFilter === "All" || (b.availableQuantity && b.availableQuantity > 0);
+    const availCount = Number(b.availableCopies ?? b.copies_owned ?? 0);
+    const matchesAvail = availabilityFilter === "All" || availCount > 0;
 
     return matchesSearch && matchesCat && matchesAvail;
   });
@@ -128,9 +129,9 @@ export default function MemberSearchBooksView() {
             <p className="text-sm font-semibold text-slate-600">No books found matching your criteria.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
             {filteredBooks.map((book) => {
-              const isAvailable = (book.availableQuantity || 1) > 0;
+              const isAvailable = Number(book.availableCopies ?? book.copies_owned ?? 0) > 0;
               const isReserved = reservedBookIds.includes(book.id);
 
               return (
@@ -138,11 +139,11 @@ export default function MemberSearchBooksView() {
                   key={book.id}
                   className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
                 >
-                  <div className="p-4 space-y-3">
-                    <div className="w-full h-40 rounded-xl bg-slate-900 border border-slate-200 flex items-center justify-center text-white relative overflow-hidden">
+                  <div className="p-3 sm:p-4 space-y-3">
+                    <div className="w-full aspect-[3/4] rounded-xl bg-slate-900 border border-slate-200 flex items-center justify-center text-white relative overflow-hidden">
                       <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
                       <span
-                        className={`absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                        className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border ${
                           isAvailable
                             ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                             : "bg-amber-500/20 text-amber-300 border-amber-500/40"
@@ -163,10 +164,10 @@ export default function MemberSearchBooksView() {
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+                  <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 sm:gap-2">
                     <button
                       onClick={() => setSelectedBook(book)}
-                      className="flex-1 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1"
                     >
                       <Info size={13} />
                       <span>Details</span>
@@ -175,7 +176,7 @@ export default function MemberSearchBooksView() {
                     <button
                       onClick={() => handleReserveBook(book)}
                       disabled={!isAvailable || isReserved}
-                      className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 ${
+                      className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 ${
                         isReserved
                           ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                           : isAvailable
@@ -197,10 +198,10 @@ export default function MemberSearchBooksView() {
       {/* BOOK DETAILS MODAL */}
       {selectedBook && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
-            <div className="flex items-start gap-4 border-b border-slate-100 pb-3">
-              <div className="w-20 h-28 shrink-0">
-                <BookCoverImage book={selectedBook} className="w-20 h-28 object-cover rounded-xl border border-slate-200 shadow-sm" />
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 sm:space-y-5">
+            <div className="flex items-start gap-3.5 sm:gap-4 border-b border-slate-100 pb-3">
+              <div className="w-20 sm:w-24 aspect-[2/3] shrink-0">
+                <BookCoverImage book={selectedBook} className="w-full h-full object-cover rounded-xl border border-slate-200 shadow-sm" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">

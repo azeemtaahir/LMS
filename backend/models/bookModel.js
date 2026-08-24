@@ -93,8 +93,8 @@ export class BookModel {
       SELECT b.id, b.title, b.category, b.publication_year, 
              COALESCE(b.copies_owned, 0) AS copies_owned,
              COALESCE(b.copies_owned, 0) AS "totalQuantity",
-             COALESCE(b.copies_owned, 0) AS "availableCopies",
-             CASE WHEN COALESCE(b.copies_owned, 0) > 0 THEN 'Available' ELSE 'Out of Stock' END AS status,
+             GREATEST(0, COALESCE(b.copies_owned, 0) - COALESCE(active_loans.cnt, 0)) AS "availableCopies",
+             CASE WHEN (COALESCE(b.copies_owned, 0) - COALESCE(active_loans.cnt, 0)) > 0 THEN 'Available' ELSE 'Out of Stock' END AS status,
              COALESCE(b.isbn, '') AS isbn,
              COALESCE(b.publisher, '') AS publisher,
              COALESCE(b.edition, '') AS edition,
@@ -108,6 +108,12 @@ export class BookModel {
                WHERE ba.book_id = b.id
              ), 'Unknown Author') AS author
       FROM book b
+      LEFT JOIN (
+        SELECT book_id, COUNT(*)::int AS cnt
+        FROM loan
+        WHERE returned_date IS NULL
+        GROUP BY book_id
+      ) active_loans ON active_loans.book_id = b.id
       ORDER BY b.id ASC
     `);
     return result.rows;
@@ -119,8 +125,8 @@ export class BookModel {
       SELECT b.id, b.title, b.category, b.publication_year, 
              COALESCE(b.copies_owned, 0) AS copies_owned,
              COALESCE(b.copies_owned, 0) AS "totalQuantity",
-             COALESCE(b.copies_owned, 0) AS "availableCopies",
-             CASE WHEN COALESCE(b.copies_owned, 0) > 0 THEN 'Available' ELSE 'Out of Stock' END AS status,
+             GREATEST(0, COALESCE(b.copies_owned, 0) - COALESCE(active_loans.cnt, 0)) AS "availableCopies",
+             CASE WHEN (COALESCE(b.copies_owned, 0) - COALESCE(active_loans.cnt, 0)) > 0 THEN 'Available' ELSE 'Out of Stock' END AS status,
              COALESCE(b.isbn, '') AS isbn,
              COALESCE(b.publisher, '') AS publisher,
              COALESCE(b.edition, '') AS edition,
@@ -134,6 +140,12 @@ export class BookModel {
                WHERE ba.book_id = b.id
              ), 'Unknown Author') AS author
       FROM book b
+      LEFT JOIN (
+        SELECT book_id, COUNT(*)::int AS cnt
+        FROM loan
+        WHERE returned_date IS NULL
+        GROUP BY book_id
+      ) active_loans ON active_loans.book_id = b.id
       WHERE b.id = $1
     `, [id]);
     return result.rows[0] || null;

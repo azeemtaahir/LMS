@@ -38,6 +38,23 @@ export default function ManageLibrarianView() {
     validCurrentPage * ITEMS_PER_PAGE
   );
 
+  const getVisiblePages = (current, total, maxVisible = 3) => {
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, current - 1);
+    let end = start + maxVisible - 1;
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   // Modals state
   const [viewingLibrarian, setViewingLibrarian] = useState(null);
   const [editingLibrarian, setEditingLibrarian] = useState(null);
@@ -211,7 +228,7 @@ export default function ManageLibrarianView() {
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  {getVisiblePages(validCurrentPage, totalPages, 3).map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}

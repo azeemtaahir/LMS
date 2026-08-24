@@ -69,6 +69,23 @@ export default function ManageUsersView() {
     validCurrentPage * ITEMS_PER_PAGE
   );
 
+  const getVisiblePages = (current, total, maxVisible = 3) => {
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, current - 1);
+    let end = start + maxVisible - 1;
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   // View Details Modal State
   const [viewMember, setViewMember] = useState(null);
 
@@ -271,7 +288,7 @@ export default function ManageUsersView() {
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  {getVisiblePages(validCurrentPage, totalPages, 3).map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}

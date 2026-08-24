@@ -149,7 +149,7 @@ export default function AppRoutes() {
           PUBLIC ROUTES
       ========================================================= */}
 
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to="/public-dashboard" replace />} />
       <Route path="/public-dashboard" element={<PublicDashboardView />} />
       <Route path="/login" element={<LoginView />} />
       <Route path="/dashboard" element={<UnifiedDashboardWrapper />} />

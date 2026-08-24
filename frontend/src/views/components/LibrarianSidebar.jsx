@@ -32,7 +32,7 @@ export default function LibrarianSidebar({ isOpen, onClose }) {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     if (onClose) onClose();
-    navigate('/dashboard');
+    navigate('/public-dashboard');
   }
 
   return (

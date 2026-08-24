@@ -159,6 +159,23 @@ export default function ManageBooksView() {
     validCurrentPage * ITEMS_PER_PAGE
   );
 
+  const getVisiblePages = (current, total, maxVisible = 3) => {
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, current - 1);
+    let end = start + maxVisible - 1;
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
       {showAddForm ? (
@@ -211,7 +228,10 @@ export default function ManageBooksView() {
                       <td className="py-3 px-4 font-semibold text-slate-800">{book.title}</td>
                       <td className="py-3 px-4 text-slate-600">{book.author || "Unknown Author"}</td>
                       <td className="py-3 px-4 text-slate-600">{book.category || "General"}</td>
-                      <td className="py-3 px-4 text-slate-800 font-semibold">{book.totalQuantity ?? book.copies_owned ?? 1}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-800">
+                        <span className="text-emerald-600 font-bold">{book.availableCopies ?? book.copies_owned ?? 0}</span>
+                        <span className="text-slate-400 font-normal"> / {book.totalQuantity ?? book.copies_owned ?? 0}</span>
+                      </td>
                       <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${
@@ -274,7 +294,7 @@ export default function ManageBooksView() {
                 >
                   <ChevronLeft size={16} />
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                {getVisiblePages(validCurrentPage, totalPages, 3).map((page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
@@ -365,8 +385,10 @@ export default function ManageBooksView() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Quantity</span>
-                  <span className="text-slate-800 font-semibold block mt-0.5">{viewingBook.totalQuantity ?? viewingBook.copies_owned ?? 1}</span>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Available / Total</span>
+                  <span className="text-slate-800 font-semibold block mt-0.5">
+                    <strong className="text-emerald-600 font-bold">{viewingBook.availableCopies ?? viewingBook.copies_owned ?? 0}</strong> / {viewingBook.totalQuantity ?? viewingBook.copies_owned ?? 0}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Shelf Number</span>

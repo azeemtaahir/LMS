@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useBookController } from "../../../hooks/useBookHook";
 import { useMemberController } from "../../../hooks/useMemberHook";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
-import { User, BookOpen, ArrowRight } from "lucide-react";
+import { User, BookOpen, ArrowRight, AlertTriangle } from "lucide-react";
 
 export default function IssueBookView() {
   const navigate = useNavigate();
@@ -21,14 +21,20 @@ export default function IssueBookView() {
       String(s.user_id) === String(issueFormData.studentId)
   );
   const selectedBookObj = books.find((b) => String(b.id) === String(issueFormData.bookId));
+  const isOutOfStock = selectedBookObj && Number(selectedBookObj.availableCopies ?? selectedBookObj.copies_owned ?? 0) <= 0;
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    await handleIssueBookSubmit(e, selectedStudentObj, selectedBookObj);
-    const targetPath = location.pathname.startsWith("/librarian/")
-      ? "/librarian/issued-lib"
-      : "/issued";
-    navigate(targetPath);
+    if (isOutOfStock) {
+      alert(`Book "${selectedBookObj.title}" is not available (0/${selectedBookObj.totalQuantity ?? selectedBookObj.copies_owned ?? 0} copies available). Cannot issue this book!`);
+      return;
+    }
+    const success = await handleIssueBookSubmit(e, selectedStudentObj, selectedBookObj);
+    if (success) {
+      const isLibrarianRoute = location.pathname.includes("-lib") || location.pathname.includes("librarian");
+      const targetPath = isLibrarianRoute ? "/issued-lib" : "/issued";
+      navigate(targetPath);
+    }
   };
 
   return (
@@ -135,11 +141,14 @@ export default function IssueBookView() {
                 required
               >
                 <option value="" className="bg-slate-900 text-white">Select book</option>
-                {books.map((b) => (
-                  <option key={b.id} value={b.id} className="bg-slate-900 text-white">
-                    {b.title} — by {b.author}
-                  </option>
-                ))}
+                {books.map((b) => {
+                  const avail = Number(b.availableCopies ?? b.copies_owned ?? 0);
+                  return (
+                    <option key={b.id} value={b.id} className="bg-slate-900 text-white">
+                      {b.title} — by {b.author} {avail <= 0 ? "(OUT OF STOCK - 0 Copies)" : `(${avail} available)`}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -152,7 +161,7 @@ export default function IssueBookView() {
                 <div className="w-16 h-16 rounded-2xl bg-slate-900/90 border border-indigo-500/30 flex items-center justify-center text-indigo-300 shrink-0 shadow-inner">
                   <BookOpen size={30} />
                 </div>
-                <div className="space-y-1 text-xs text-slate-300">
+                <div className="space-y-1 text-xs text-slate-300 w-full">
                   <div>
                     <span className="font-semibold text-indigo-200">Title:</span>{" "}
                     {selectedBookObj ? selectedBookObj.title : "—"}
@@ -172,13 +181,28 @@ export default function IssueBookView() {
                   <div>
                     <span className="font-semibold text-indigo-200">Available Copies:</span>{" "}
                     {selectedBookObj ? (
-                      <span className="font-bold text-emerald-400">{selectedBookObj.availableCopies}</span>
+                      <span className={`font-bold ${isOutOfStock ? "text-rose-400" : "text-emerald-400"}`}>
+                        {selectedBookObj.availableCopies ?? 0} / {selectedBookObj.totalQuantity ?? selectedBookObj.copies_owned ?? 0}
+                      </span>
                     ) : (
                       "—"
                     )}
                   </div>
                 </div>
               </div>
+
+              {/* OUT OF STOCK ALERT CARD */}
+              {isOutOfStock && (
+                <div className="p-3 rounded-xl bg-rose-900/70 border border-rose-500/50 text-rose-100 text-xs font-bold flex items-center gap-2.5 animate-pulse mt-3">
+                  <AlertTriangle size={18} className="text-rose-400 shrink-0" />
+                  <div>
+                    <p className="font-bold text-rose-200">Book Not Available!</p>
+                    <p className="text-[11px] text-rose-300 font-normal mt-0.5">
+                      0 copies available out of {selectedBookObj.totalQuantity ?? selectedBookObj.copies_owned ?? 0}. This book cannot be issued right now.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Return Date Picker */}
@@ -198,9 +222,14 @@ export default function IssueBookView() {
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+            disabled={isOutOfStock}
+            className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs transition shadow-xl flex items-center justify-center gap-2 ${
+              isOutOfStock
+                ? "bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-70"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/30 cursor-pointer active:scale-98"
+            }`}
           >
-            <span>Issue Book</span>
+            <span>{isOutOfStock ? "Book Not Available (0 Copies)" : "Issue Book"}</span>
             <ArrowRight size={16} />
           </button>
         </div>

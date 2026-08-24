@@ -238,7 +238,7 @@ export default function PublicDashboardView() {
               <p className="text-xs text-slate-500">Try adjusting your search query or filters.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
               {filteredBooks.map((book) => {
                 const copies = book.availableCopies !== undefined ? book.availableCopies : (book.availableQuantity || 1);
                 const isAvailable = copies > 0;
@@ -248,11 +248,11 @@ export default function PublicDashboardView() {
                     key={book.id}
                     className="bg-slate-900 rounded-2xl border border-slate-800 hover:border-indigo-500/50 shadow-md hover:shadow-xl hover:shadow-indigo-500/5 transition-all flex flex-col justify-between overflow-hidden group"
                   >
-                    <div className="p-4 space-y-3">
-                      <div className="w-full h-44 rounded-xl bg-slate-950 border border-slate-800 relative overflow-hidden group-hover:scale-101 transition-transform flex items-center justify-center">
+                    <div className="p-3 sm:p-4 space-y-3">
+                      <div className="w-full aspect-[3/4] rounded-xl bg-slate-950 border border-slate-800 relative overflow-hidden group-hover:scale-[1.02] transition-transform flex items-center justify-center">
                         <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
                         <span
-                          className={`absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                          className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold border ${
                             isAvailable
                               ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
                               : "bg-rose-500/20 text-rose-400 border-rose-500/40"
@@ -266,17 +266,17 @@ export default function PublicDashboardView() {
                         <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-semibold border border-indigo-500/20 inline-block mb-1">
                           {book.category || "General"}
                         </span>
-                        <h3 className="text-sm font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
+                        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
                           {book.title}
                         </h3>
-                        <p className="text-xs text-slate-400 font-medium">By {book.author}</p>
+                        <p className="text-[11px] sm:text-xs text-slate-400 font-medium">By {book.author}</p>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-slate-950/60 border-t border-slate-800/80 flex items-center gap-2">
+                    <div className="p-2.5 sm:p-3 bg-slate-950/60 border-t border-slate-800/80 flex items-center gap-1.5 sm:gap-2">
                       <button
                         onClick={() => setSelectedBook(book)}
-                        className="flex-1 py-2 px-3 rounded-xl border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1.5"
+                        className="flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5"
                       >
                         <Info size={13} />
                         <span>Details</span>
@@ -285,7 +285,7 @@ export default function PublicDashboardView() {
                       {user ? (
                         <button
                           onClick={() => navigate(getUserDashboardPath())}
-                          className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20"
+                          className="flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20"
                         >
                           <BookmarkPlus size={13} />
                           <span>Reserve</span>
@@ -293,7 +293,7 @@ export default function PublicDashboardView() {
                       ) : (
                         <button
                           onClick={() => navigate("/login")}
-                          className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 border border-slate-700"
+                          className="flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 border border-slate-700"
                         >
                           <LogIn size={13} />
                           <span>Login</span>
@@ -311,10 +311,10 @@ export default function PublicDashboardView() {
       {/* BOOK DETAILS MODAL */}
       {selectedBook && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-700/80 space-y-5">
-            <div className="flex items-start gap-4 border-b border-slate-800 pb-4">
-              <div className="w-20 h-28 shrink-0">
-                <BookCoverImage book={selectedBook} className="w-20 h-28 object-cover rounded-xl border border-slate-700 shadow-md" />
+          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-700/80 space-y-4 sm:space-y-5">
+            <div className="flex items-start gap-3.5 sm:gap-4 border-b border-slate-800 pb-4">
+              <div className="w-20 sm:w-24 aspect-[2/3] shrink-0">
+                <BookCoverImage book={selectedBook} className="w-full h-full object-cover rounded-xl border border-slate-700 shadow-md" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">

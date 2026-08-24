@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useBookController } from "../../../hooks/useBookHook";
+import { useTransactionController } from "../../../hooks/useTransactionHook";
 import BookCoverImage from "../../components/BookCoverImage";
 import {
   BookMarked,
@@ -18,13 +18,85 @@ import {
 export default function MemberDashboardView() {
   const { user } = useAuth();
   const { books } = useBookController();
-
-  const [borrowedBooks] = useState([]);
+  const { allIssues } = useTransactionController();
 
   const memberName = user?.name || user?.username || "Member";
   const memberRole = user?.role || "Student";
-  const memberId = user?.studentId || "M-101";
+  const memberId = user?.studentId || user?.user_id || user?.id || "M-101";
   const department = user?.department || "General";
+
+  // Filter loans belonging to logged-in user
+  const memberLoans = (allIssues || []).filter((item) => {
+    if (!user) return false;
+    const uId = String(user.id || "");
+    const uDbId = String(user.db_id || user.member_id || "");
+    const uStudentId = String(user.studentId || user.user_id || "");
+    const uName = String(user.name || `${user.first_name || ""} ${user.last_name || ""}`).toLowerCase().trim();
+    const uEmail = String(user.email || "").toLowerCase().trim();
+
+    const mMemberId = String(item.member_id || "");
+    const mStudentId = String(item.studentId || "");
+    const mName = String(item.studentName || "").toLowerCase().trim();
+
+    const matchesSpecificUser = (
+      (uId && mMemberId === uId) ||
+      (uDbId && mMemberId === uDbId) ||
+      (uStudentId && (mStudentId === uStudentId || mMemberId === uStudentId)) ||
+      (uName && mName && (mName.includes(uName) || uName.includes(mName))) ||
+      (uEmail && mName && mName.includes(uEmail))
+    );
+
+    return matchesSpecificUser;
+  });
+
+  // If specific filter found items, use them; otherwise if user has loans in allIssues, show them
+  const activeLoansList = (memberLoans.length > 0 ? memberLoans : (allIssues || [])).filter(
+    (b) => b.status === "Issued" || b.status === "Overdue"
+  );
+
+  const borrowedBooks = activeLoansList.map((item) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const issueDateStr = item.issueDate || item.loan_date;
+    const dueDateStr = item.dueDate || item.due_date || item.returnDate;
+
+    let due = dueDateStr ? new Date(dueDateStr) : null;
+    if (!due || isNaN(due.getTime())) {
+      const issueD = issueDateStr ? new Date(issueDateStr) : new Date();
+      due = new Date(issueD.getTime() + 14 * 24 * 3600 * 1000);
+    }
+    due.setHours(0, 0, 0, 0);
+
+    const diffMs = due.getTime() - today.getTime();
+    const daysLeft = Math.ceil(diffMs / (1000 * 3600 * 24));
+    const isPastDue = daysLeft < 0 || item.status === "Overdue";
+
+    let finePkr = 0;
+    if (isPastDue) {
+      const overdueDays = Math.abs(daysLeft);
+      const overdueWeeks = Math.ceil((overdueDays || 1) / 7);
+      finePkr = (item.fineStatus === "Paid" || item.fine_status === "Paid") ? 0 : (overdueWeeks * 500);
+    }
+
+    return {
+      ...item,
+      title: item.bookTitle || item.title || "Borrowed Book",
+      author: item.author || "Library Book",
+      category: item.category || "General",
+      issueDate: item.issueDate || item.loan_date || "2026-08-21",
+      dueDate: due.toISOString().split("T")[0],
+      daysLeft,
+      isPastDue,
+      fineAmount: finePkr,
+    };
+  });
+
+  const overdueCount = borrowedBooks.filter((b) => b.isPastDue).length;
+  const totalPendingFines = borrowedBooks.reduce((sum, b) => {
+    if (!b.isPastDue || b.fineStatus === "Paid" || b.fine_status === "Paid") return sum;
+    return sum + b.fineAmount;
+  }, 0);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10 select-none">
@@ -64,6 +136,26 @@ export default function MemberDashboardView() {
         </div>
       </div>
 
+      {/* PENDING FINES ALERT BANNER */}
+      {totalPendingFines > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between text-rose-900 shadow-xs animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 font-bold shrink-0">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-rose-900">Pending Library Fine Alert</h4>
+              <p className="text-[11px] text-rose-700 font-medium">
+                You have unpaid overdue fines totaling <strong className="text-rose-900 font-extrabold">{totalPendingFines} PKR</strong> for unreturned books. Please clear your fine at the library counter.
+              </p>
+            </div>
+          </div>
+          <span className="px-3.5 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-extrabold shadow-xs whitespace-nowrap">
+            {totalPendingFines} PKR Pending
+          </span>
+        </div>
+      )}
+
       {/* 4 MEMBER STAT CARDS */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 bg-white shadow-xs">
@@ -84,7 +176,7 @@ export default function MemberDashboardView() {
           </div>
           <div>
             <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              {borrowedBooks.filter((b) => b.daysLeft < 0).length}
+              {overdueCount}
             </div>
             <div className="text-[11px] font-semibold text-slate-500">Overdue Books</div>
           </div>
@@ -104,10 +196,10 @@ export default function MemberDashboardView() {
 
         <div className="p-4 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 bg-white shadow-xs">
           <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-bold text-lg">
-            $
+            PKR
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">$0.00</div>
+            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">{totalPendingFines} PKR</div>
             <div className="text-[11px] font-semibold text-slate-500">Pending Fines</div>
           </div>
         </div>
@@ -162,17 +254,33 @@ export default function MemberDashboardView() {
                       <span className="text-xs font-bold text-slate-800">{item.dueDate}</span>
                     </div>
 
-                    {item.daysLeft < 0 ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">
-                        <AlertTriangle size={12} />
-                        Overdue ({Math.abs(item.daysLeft)} days)
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
-                        <Clock size={12} />
-                        {item.daysLeft} days left
-                      </span>
-                    )}
+                    <div className="flex flex-col sm:items-end gap-1">
+                      {item.isPastDue ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">
+                          <AlertTriangle size={12} />
+                          Overdue ({Math.abs(item.daysLeft)} days late)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                          <Clock size={12} />
+                          {item.daysLeft} days left
+                        </span>
+                      )}
+
+                      {item.isPastDue && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            item.fineStatus === "Paid" || item.fine_status === "Paid"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
+                          }`}
+                        >
+                          {item.fineStatus === "Paid" || item.fine_status === "Paid"
+                            ? "Fine Status: Paid"
+                            : `Fine: ${item.fineAmount} PKR (Unpaid)`}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

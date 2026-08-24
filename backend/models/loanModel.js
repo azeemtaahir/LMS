@@ -51,10 +51,16 @@ export class LoanModel {
         TO_CHAR(COALESCE(l.due_date, (l.loan_date + 14)::date), 'YYYY-MM-DD') AS "returnDate",
         TO_CHAR(l.returned_date, 'YYYY-MM-DD') AS "actualReturnedDate",
         GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date))) AS "overdueDays",
-        CEIL(GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date)))::numeric / 7.0) * 500 AS "fineAmount"
+        CEIL(GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date)))::numeric / 7.0) * 500 AS "fineAmount",
+        f.status AS "fineStatus",
+        f.status AS "fine_status",
+        f.id AS "fine_id"
       FROM loan l
       LEFT JOIN book b ON l.book_id = b.id
       LEFT JOIN member m ON l.member_id = m.id
+      LEFT JOIN LATERAL (
+        SELECT status, id FROM fine WHERE loan_id = l.id ORDER BY id DESC LIMIT 1
+      ) f ON true
       ORDER BY l.id DESC
     `);
     return result.rows;
@@ -128,18 +134,36 @@ export class LoanModel {
       }
     }
 
-    // 5. Check/resolve effectiveBookId
+    // 5. Check/resolve effectiveBookId and verify availability
     let effectiveBookId = Number(rawBookId) || rawBookId;
     if (effectiveBookId) {
       try {
-        const bRes = await lms.query('SELECT id FROM book WHERE id = $1', [effectiveBookId]);
+        const bRes = await lms.query(
+          `SELECT b.id, b.copies_owned, 
+                  GREATEST(0, COALESCE(b.copies_owned, 0) - COALESCE(active_loans.cnt, 0)) AS available_copies
+           FROM book b
+           LEFT JOIN (
+             SELECT book_id, COUNT(*)::int AS cnt
+             FROM loan
+             WHERE returned_date IS NULL
+             GROUP BY book_id
+           ) active_loans ON active_loans.book_id = b.id
+           WHERE b.id = $1`,
+          [effectiveBookId]
+        );
         if (bRes.rows.length === 0) {
           const anyBook = await lms.query('SELECT id FROM book ORDER BY id ASC LIMIT 1');
           if (anyBook.rows.length > 0) {
             effectiveBookId = anyBook.rows[0].id;
           }
+        } else if (Number(bRes.rows[0].available_copies) <= 0) {
+          const err = new Error('No available copies left for this book');
+          err.status = 400;
+          throw err;
         }
-      } catch (e) {}
+      } catch (e) {
+        if (e.status === 400) throw e;
+      }
     }
 
     let result;

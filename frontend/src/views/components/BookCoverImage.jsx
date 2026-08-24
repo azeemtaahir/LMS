@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
 
-export default function BookCoverImage({ book, className = "w-full h-40 object-cover rounded-xl" }) {
+export default function BookCoverImage({ book, className = "w-full h-full object-cover rounded-xl" }) {
   const [imgError, setImgError] = useState(false);
 
   const cleanIsbn = book?.isbn ? String(book.isbn).replace(/[^0-9X]/gi, "") : "";
@@ -14,9 +14,9 @@ export default function BookCoverImage({ book, className = "w-full h-40 object-c
 
   if (!initialSrc || imgError) {
     return (
-      <div className={`bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 flex flex-col items-center justify-center text-indigo-300 p-2 text-center select-none ${className}`}>
-        <BookOpen className="w-8 h-8 opacity-70 mb-1" />
-        <span className="text-[10px] font-bold line-clamp-2 px-1 text-slate-300">
+      <div className={`bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 flex flex-col items-center justify-center text-indigo-300 p-3 text-center select-none ${className}`}>
+        <BookOpen className="w-8 h-8 opacity-70 mb-1.5 shrink-0" />
+        <span className="text-[11px] font-bold line-clamp-2 px-1 text-slate-300 leading-tight">
           {book?.title || "No Cover"}
         </span>
       </div>
@@ -29,6 +29,7 @@ export default function BookCoverImage({ book, className = "w-full h-40 object-c
       alt={book?.title || "Book Cover"}
       onError={() => setImgError(true)}
       className={className}
+      loading="lazy"
     />
   );
 }

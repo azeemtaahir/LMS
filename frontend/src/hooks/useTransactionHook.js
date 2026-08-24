@@ -54,8 +54,9 @@ export const useTransactionHook = () => {
   }, [setSearchParams]);
 
   const computeLoanFine = (loan) => {
-    if (loan.status === "Returned" || loan.fineStatus === "Paid" || loan.fine_status === "Paid") {
-      return { fineAmount: 0, status: "Returned", overdueDays: 0, overdueWeeks: 0 };
+    const isPaid = loan.fineStatus === "Paid" || loan.fine_status === "Paid";
+    if (loan.status === "Returned") {
+      return { fineAmount: 0, status: "Returned", overdueDays: 0, overdueWeeks: 0, fineStatus: isPaid ? "Paid" : "Unpaid" };
     }
 
     const issueDateStr = loan.issueDate || loan.loan_date;
@@ -63,21 +64,41 @@ export const useTransactionHook = () => {
     const returnedDateStr = loan.returned_date || loan.actualReturnedDate;
 
     const dueDate = dueDateStr ? new Date(dueDateStr) : (issueDateStr ? new Date(new Date(issueDateStr).getTime() + 14 * 24 * 3600 * 1000) : null);
-    if (!dueDate || isNaN(dueDate.getTime())) return { fineAmount: Number(loan.fineAmount) || 0, status: loan.status || "Issued", overdueDays: 0, overdueWeeks: 0 };
+    if (!dueDate || isNaN(dueDate.getTime())) {
+      return { 
+        fineAmount: isPaid ? 0 : (Number(loan.fineAmount) || 0), 
+        status: loan.status || "Issued", 
+        overdueDays: 0, 
+        overdueWeeks: 0,
+        fineStatus: isPaid ? "Paid" : (loan.fineStatus || loan.fine_status || "Unpaid")
+      };
+    }
 
     const endDate = returnedDateStr ? new Date(returnedDateStr) : new Date();
     const diffMs = endDate.getTime() - dueDate.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays <= 0) {
-      return { fineAmount: 0, status: loan.status || "Issued", overdueDays: 0, overdueWeeks: 0 };
+      return { 
+        fineAmount: 0, 
+        status: loan.status || "Issued", 
+        overdueDays: 0, 
+        overdueWeeks: 0,
+        fineStatus: isPaid ? "Paid" : "Unpaid"
+      };
     }
 
     const overdueWeeks = Math.ceil(diffDays / 7);
-    const fineAmount = overdueWeeks * 500; // 500 PKR per week
+    const fineAmount = isPaid ? 0 : overdueWeeks * 500; // 500 PKR per week
     const status = loan.status === "Returned" ? "Returned" : "Overdue";
 
-    return { fineAmount: status === "Returned" ? 0 : fineAmount, status, overdueDays: diffDays, overdueWeeks };
+    return { 
+      fineAmount, 
+      status, 
+      overdueDays: diffDays, 
+      overdueWeeks,
+      fineStatus: isPaid ? "Paid" : (loan.fineStatus || loan.fine_status || "Unpaid")
+    };
   };
 
   const fetchTransactions = useCallback(async () => {
@@ -103,13 +124,15 @@ export const useTransactionHook = () => {
           : [];
 
       const processedIssues = rawIssues.map((item) => {
-        const { fineAmount, status, overdueDays, overdueWeeks } = computeLoanFine(item);
+        const { fineAmount, status, overdueDays, overdueWeeks, fineStatus } = computeLoanFine(item);
         return {
           ...item,
           status,
           fineAmount: Number(item.fineAmount) || fineAmount,
           overdueDays,
           overdueWeeks,
+          fineStatus: item.fineStatus || item.fine_status || fineStatus,
+          fine_status: item.fine_status || item.fineStatus || fineStatus,
         };
       });
 
@@ -141,7 +164,12 @@ export const useTransactionHook = () => {
     }
     if (!issueFormData.studentId || !issueFormData.bookId) {
       alert("Please select both a borrower user and a book.");
-      return;
+      return false;
+    }
+
+    if (selectedBook && Number(selectedBook.availableCopies) <= 0) {
+      alert(`Book "${selectedBook.title || 'Selected Book'}" is not available (0 copies in stock). Cannot issue book.`);
+      return false;
     }
 
     const dbMemberId = selectedStudent?.db_id || selectedStudent?.id;
@@ -171,16 +199,8 @@ export const useTransactionHook = () => {
     try {
       await api.post("/loans", payload);
       await fetchTransactions();
+      window.dispatchEvent(new Event("book-updated"));
       alert("Book issued successfully!");
-    } catch (err) {
-      console.warn("API POST /loans fallback:", err?.message);
-      const fallbackRecord = {
-        id: Date.now(),
-        ...payload,
-      };
-      setRecentIssues((prev) => [fallbackRecord, ...prev]);
-      alert("Book issued successfully!");
-    } finally {
       const freshToday = getTodayStr();
       setIssueFormData({
         studentId: "",
@@ -189,6 +209,12 @@ export const useTransactionHook = () => {
         returnDate: get7DaysLaterStr(freshToday),
         notes: "",
       });
+      return true;
+    } catch (err) {
+      console.error("API POST /loans failed:", err?.response?.data || err?.message);
+      const errMsg = err?.response?.data?.message || err?.message || "Book not available or issue failed.";
+      alert(errMsg);
+      return false;
     }
   };
 
@@ -242,6 +268,7 @@ export const useTransactionHook = () => {
       );
 
       await fetchTransactions();
+      window.dispatchEvent(new Event("book-updated"));
       alert("Book returned successfully!");
       setActiveReturnDetails(null);
     } catch (err) {
@@ -265,6 +292,7 @@ export const useTransactionHook = () => {
       );
 
       await fetchTransactions();
+      window.dispatchEvent(new Event("book-updated"));
       alert(`Book "${loanItem.bookTitle || "Book"}" returned successfully!`);
     } catch (err) {
       console.error("Return loan error", err);
@@ -277,8 +305,8 @@ export const useTransactionHook = () => {
       const fineAmount = loanItem.fineAmount || 500;
       try {
         await api.post("/fines/pay", {
-          member_id: loanItem.member_id || loanItem.id,
-          loan_id: loanItem.id,
+          member_id: loanItem.member_id || loanItem.memberId || loanItem.studentId || loanItem.id,
+          loan_id: loanItem.loan_id || loanItem.id,
           fine_id: loanItem.fine_id || loanItem.id,
           payment_amount: fineAmount,
         });
@@ -288,14 +316,12 @@ export const useTransactionHook = () => {
 
       setRecentIssues((prev) =>
         prev.map((item) =>
-          item.id === loanItem.id
+          item.id === loanItem.id || item.id === loanItem.loan_id
             ? {
                 ...item,
-                status: "Returned",
-                returned_date: getTodayStr(),
-                actualReturnedDate: getTodayStr(),
                 fineStatus: "Paid",
                 fine_status: "Paid",
+                fineAmount: 0,
               }
             : item
         )

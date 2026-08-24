@@ -21,6 +21,23 @@ export default function IssuedBooksView() {
     validCurrentPage * ITEMS_PER_PAGE
   );
 
+  const getVisiblePages = (current, total, maxVisible = 3) => {
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, current - 1);
+    let end = start + maxVisible - 1;
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
       {/* Top Controls: Search Bar & Status Filter */}
@@ -104,8 +121,10 @@ export default function IssuedBooksView() {
                           >
                             Return
                           </button>
-                        ) : (
+                        ) : (item.status === "Returned" || item.fineStatus === "Paid" || item.fine_status === "Paid") ? (
                           <span className="text-[11px] font-semibold text-slate-400 italic">Completed</span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-amber-600 italic">Pending</span>
                         )}
                         <button
                           title="View Details"
@@ -138,7 +157,7 @@ export default function IssuedBooksView() {
               >
                 <ChevronLeft size={16} />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              {getVisiblePages(validCurrentPage, totalPages, 3).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}

@@ -79,6 +79,7 @@ export class FineModel {
       JOIN loan l ON f.loan_id = l.id
       LEFT JOIN member m ON f.member_id = m.id
       LEFT JOIN book b ON l.book_id = b.id
+      WHERE f.status != 'Paid' OR f.status IS NULL
       ORDER BY f.id DESC
     `);
     return result.rows;
@@ -99,24 +100,52 @@ export class FineModel {
 
   static async payFine({ member_id, loan_id, fine_id, payment_amount }) {
     const targetLoanId = loan_id || fine_id;
+    let targetMemberId = member_id;
+
+    // Ensure fine_payment table exists per exact ERD schema
+    await lms.query(`
+      CREATE TABLE IF NOT EXISTS fine_payment (
+        id SERIAL PRIMARY KEY,
+        member_id INT NOT NULL REFERENCES member(id) ON DELETE CASCADE,
+        payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        payment_amount DECIMAL(8,2) NOT NULL CHECK (payment_amount >= 0)
+      );
+    `).catch(() => {});
+
     if (targetLoanId) {
-      // 1. Update fine table status to 'Paid'
-      await lms.query("UPDATE fine SET status = 'Paid' WHERE id = $1 OR loan_id = $1", [targetLoanId]);
-      // 2. Update loan table status to 'Returned' and set returned_date
-      await lms.query("UPDATE loan SET status = 'Returned', returned_date = CURRENT_DATE WHERE id = $1", [targetLoanId]);
-      // 3. Restore book copy quantity
-      await lms.query(
-        `UPDATE book SET available_copies = available_copies + 1 
-         FROM loan WHERE book.id = loan.book_id AND loan.id = $1`,
-        [targetLoanId]
-      ).catch(() => {});
+      // Find member_id from loan if targetMemberId not valid
+      try {
+        const lRes = await lms.query('SELECT member_id FROM loan WHERE id = $1', [targetLoanId]);
+        if (lRes.rows.length > 0 && lRes.rows[0].member_id) {
+          targetMemberId = lRes.rows[0].member_id;
+        }
+      } catch (e) {}
+
+      // 1. Update fine table status to 'Paid' or insert new 'Paid' fine record if missing
+      const existingFine = await lms.query('SELECT id FROM fine WHERE loan_id = $1 OR id = $1', [targetLoanId]);
+      if (existingFine.rows.length > 0) {
+        await lms.query("UPDATE fine SET status = 'Paid' WHERE loan_id = $1 OR id = $1", [targetLoanId]);
+      } else {
+        await lms.query(
+          "INSERT INTO fine (member_id, loan_id, fine_date, fine_amount, status) VALUES ($1, $2, CURRENT_DATE, $3, 'Paid')",
+          [targetMemberId || 1, targetLoanId, payment_amount || 500]
+        );
+      }
     }
 
-    const targetMemberId = member_id || 1;
-    // 4. Record payment in fine_payment table
+    if (!targetMemberId) {
+      try {
+        const anyMem = await lms.query('SELECT id FROM member ORDER BY id ASC LIMIT 1');
+        if (anyMem.rows.length > 0) {
+          targetMemberId = anyMem.rows[0].id;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Insert payment record into fine_payment database table according to ER schema
     const result = await lms.query(
-      'INSERT INTO fine_payment (member_id, payment_amount, payment_date) VALUES ($1, $2, CURRENT_DATE) RETURNING *',
-      [targetMemberId, payment_amount || 500]
+      'INSERT INTO fine_payment (member_id, payment_date, payment_amount) VALUES ($1, CURRENT_DATE, $2) RETURNING *',
+      [targetMemberId || 1, payment_amount || 500]
     );
     return result.rows[0];
   }

@@ -195,10 +195,16 @@ export const useBookHook = () => {
 
     initFetch();
 
+    const handleCustomUpdate = () => {
+      fetchBooks();
+    };
+    window.addEventListener("book-updated", handleCustomUpdate);
+
     return () => {
       ignore = true;
+      window.removeEventListener("book-updated", handleCustomUpdate);
     };
-  }, []);
+  }, [fetchBooks]);
 
   const handleBookFormChange = (e) => {
     const { name, value, type, files } = e.target;
