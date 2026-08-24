@@ -9,7 +9,7 @@ export default function IssueBookView() {
   const location = useLocation();
   const { books } = useBookController();
   const { students, allStudents } = useMemberController();
-  const { issueFormData, setIssueFormData, handleIssueBookSubmit } = useTransactionController();
+  const { issueFormData, setIssueFormData, handleIssueBookSubmit, allIssues } = useTransactionController();
 
   const userList = (allStudents && allStudents.length > 0) ? allStudents : (students || []);
 
@@ -23,10 +23,34 @@ export default function IssueBookView() {
   const selectedBookObj = books.find((b) => String(b.id) === String(issueFormData.bookId));
   const isOutOfStock = selectedBookObj && Number(selectedBookObj.availableCopies ?? selectedBookObj.copies_owned ?? 0) <= 0;
 
+  const targetTitle = selectedBookObj?.title ? String(selectedBookObj.title).trim().toLowerCase() : "";
+  const targetIsbn = selectedBookObj?.isbn ? String(selectedBookObj.isbn).trim().toLowerCase() : "";
+  const targetBookId = String(selectedBookObj?.id || issueFormData.bookId);
+  const targetMemberIdStr = String(selectedStudentObj?.db_id || selectedStudentObj?.id || selectedStudentObj?.user_id || issueFormData.studentId).toLowerCase();
+
+  const hasActiveSameTitleOrIsbnLoan = Boolean(
+    selectedStudentObj && selectedBookObj && (allIssues || []).some((loan) => {
+      const isUnreturned = loan.status !== "Returned" && !loan.returned_date;
+      if (!isUnreturned) return false;
+      const loanMemberIdStr = String(loan.member_id || loan.studentId || "").toLowerCase();
+      const isSameMember = loanMemberIdStr === targetMemberIdStr || loan.studentName === (selectedStudentObj?.name || `${selectedStudentObj?.first_name || ''} ${selectedStudentObj?.last_name || ''}`.trim());
+      if (!isSameMember) return false;
+      const loanTitle = loan.bookTitle || loan.title ? String(loan.bookTitle || loan.title).trim().toLowerCase() : "";
+      const loanIsbn = loan.isbn ? String(loan.isbn).trim().toLowerCase() : "";
+      if (targetTitle && loanTitle && targetTitle === loanTitle) return true;
+      if (targetIsbn && loanIsbn && targetIsbn === loanIsbn) return true;
+      return String(loan.book_id || loan.bookId) === targetBookId;
+    })
+  );
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (isOutOfStock) {
       alert(`Book "${selectedBookObj.title}" is not available (0/${selectedBookObj.totalQuantity ?? selectedBookObj.copies_owned ?? 0} copies available). Cannot issue this book!`);
+      return;
+    }
+    if (hasActiveSameTitleOrIsbnLoan) {
+      alert(`This member already has an active issue/borrow for '${selectedBookObj?.title}'. One person can never take the same book title at a time.`);
       return;
     }
     const success = await handleIssueBookSubmit(e, selectedStudentObj, selectedBookObj);
@@ -112,10 +136,11 @@ export default function IssueBookView() {
                 value={issueFormData.issueDate}
                 onChange={(e) => {
                   const newIssueDate = e.target.value;
+                  const days = issueFormData.loanDurationDays && issueFormData.loanDurationDays !== "custom" ? Number(issueFormData.loanDurationDays) : 7;
                   const d = new Date(newIssueDate);
                   let calcReturn = "";
                   if (!isNaN(d.getTime())) {
-                    d.setDate(d.getDate() + 7);
+                    d.setDate(d.getDate() + days);
                     calcReturn = d.toISOString().split("T")[0];
                   }
                   setIssueFormData((prev) => ({
@@ -203,15 +228,37 @@ export default function IssueBookView() {
                   </div>
                 </div>
               )}
+
+              {/* ACTIVE BOOK TITLE/ISBN LOAN CONSTRAINT ALERT CARD */}
+              {hasActiveSameTitleOrIsbnLoan && !isOutOfStock && (
+                <div className="p-3 rounded-xl bg-amber-900/70 border border-amber-500/50 text-amber-100 text-xs font-bold flex items-center gap-2.5 mt-3">
+                  <AlertTriangle size={18} className="text-amber-400 shrink-0" />
+                  <div>
+                    <p className="font-bold text-amber-200">Duplicate Book Borrowing Restricted!</p>
+                    <p className="text-[11px] text-amber-300 font-normal mt-0.5">
+                      This member already has an active loan for '{selectedBookObj?.title}'. One person can never take the same book title at a time.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
+
+
 
             {/* Return Date Picker */}
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 rounded-2xl border border-indigo-900/40 shadow-xl text-white">
-              <label className="block text-xs font-bold text-indigo-200 mb-2">Return Date</label>
+              <label className="block text-xs font-bold text-indigo-200 mb-2">Return Due Date</label>
               <input
                 type="date"
                 value={issueFormData.returnDate}
-                onChange={(e) => setIssueFormData((prev) => ({ ...prev, returnDate: e.target.value }))}
+                onChange={(e) => {
+                  const selectedReturn = e.target.value;
+                  setIssueFormData((prev) => ({
+                    ...prev,
+                    loanDurationDays: "custom",
+                    returnDate: selectedReturn,
+                  }));
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-indigo-500/30 bg-slate-900 text-white text-xs focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
               />
             </div>
@@ -222,14 +269,20 @@ export default function IssueBookView() {
         <div className="pt-2">
           <button
             type="submit"
-            disabled={isOutOfStock}
+            disabled={isOutOfStock || hasActiveSameTitleOrIsbnLoan}
             className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs transition shadow-xl flex items-center justify-center gap-2 ${
-              isOutOfStock
+              (isOutOfStock || hasActiveSameTitleOrIsbnLoan)
                 ? "bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-70"
                 : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/30 cursor-pointer active:scale-98"
             }`}
           >
-            <span>{isOutOfStock ? "Book Not Available (0 Copies)" : "Issue Book"}</span>
+            <span>
+              {isOutOfStock
+                ? "Book Not Available (0 Copies)"
+                : hasActiveSameTitleOrIsbnLoan
+                ? "Already Borrowed (Same Book Constraint)"
+                : "Issue Book"}
+            </span>
             <ArrowRight size={16} />
           </button>
         </div>

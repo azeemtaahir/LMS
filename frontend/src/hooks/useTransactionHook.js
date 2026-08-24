@@ -4,12 +4,12 @@ import api from "../api/api";
 
 const getTodayStr = () => new Date().toISOString().split("T")[0];
 
-const get7DaysLaterStr = (baseDateStr) => {
+const getNDaysLaterStr = (baseDateStr, days = 7) => {
   const d = baseDateStr ? new Date(baseDateStr) : new Date();
   if (isNaN(d.getTime())) {
-    return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   }
-  d.setDate(d.getDate() + 7);
+  d.setDate(d.getDate() + Number(days));
   return d.toISOString().split("T")[0];
 };
 
@@ -27,7 +27,8 @@ export const useTransactionHook = () => {
     studentId: "",
     bookId: "",
     issueDate: initialToday,
-    returnDate: get7DaysLaterStr(initialToday),
+    loanDurationDays: "7",
+    returnDate: getNDaysLaterStr(initialToday, 7),
     notes: "",
   });
 
@@ -182,6 +183,35 @@ export const useTransactionHook = () => {
     const bookTitleVal = selectedBook?.title || "Selected Book";
     const studentIdVal = selectedStudent?.studentId || selectedStudent?.id || issueFormData.studentId;
 
+    // Check if member already has an active loan for a book with the same Title, ISBN, or ID
+    const targetTitle = selectedBook?.title ? String(selectedBook.title).trim().toLowerCase() : "";
+    const targetIsbn = selectedBook?.isbn ? String(selectedBook.isbn).trim().toLowerCase() : "";
+    const targetBookId = String(selectedBook?.id || issueFormData.bookId);
+    const targetMemberIdStr = String(dbMemberId || studentIdVal).toLowerCase();
+
+    const existingActiveLoan = recentIssues.find((loan) => {
+      const isUnreturned = loan.status !== "Returned" && !loan.returned_date;
+      if (!isUnreturned) return false;
+
+      const loanMemberIdStr = String(loan.member_id || loan.studentId || "").toLowerCase();
+      const isSameMember = loanMemberIdStr === targetMemberIdStr || loan.studentName === studentNameVal;
+
+      if (!isSameMember) return false;
+
+      const loanTitle = loan.bookTitle || loan.title ? String(loan.bookTitle || loan.title).trim().toLowerCase() : "";
+      const loanIsbn = loan.isbn ? String(loan.isbn).trim().toLowerCase() : "";
+
+      if (targetTitle && loanTitle && targetTitle === loanTitle) return true;
+      if (targetIsbn && loanIsbn && targetIsbn === loanIsbn) return true;
+      return String(loan.book_id || loan.bookId) === targetBookId;
+    });
+
+    if (existingActiveLoan) {
+      const msg = `This member already has an active issue/borrow for '${existingActiveLoan.bookTitle || bookTitleVal}'. One person can never take the same book title at a time.`;
+      alert(msg);
+      return false;
+    }
+
     const payload = {
       book_id: isNaN(numericBookId) ? issueFormData.bookId : numericBookId,
       bookId: isNaN(numericBookId) ? issueFormData.bookId : numericBookId,
@@ -206,7 +236,8 @@ export const useTransactionHook = () => {
         studentId: "",
         bookId: "",
         issueDate: freshToday,
-        returnDate: get7DaysLaterStr(freshToday),
+        loanDurationDays: "7",
+        returnDate: getNDaysLaterStr(freshToday, 7),
         notes: "",
       });
       return true;
@@ -352,6 +383,24 @@ export const useTransactionHook = () => {
     });
   }, [recentIssues, searchParamQuery, statusParam]);
 
+  const handleExtendLoanDueDate = async (loanId, newDueDate) => {
+    if (!loanId || !newDueDate) {
+      alert("Please select a valid new return due date.");
+      return false;
+    }
+    try {
+      await api.put(`/loans/${loanId}`, { due_date: newDueDate, returnDate: newDueDate });
+      await fetchTransactions();
+      window.dispatchEvent(new Event("book-updated"));
+      alert("Issued book loan duration updated successfully!");
+      return true;
+    } catch (err) {
+      console.error("Failed to extend loan due date:", err);
+      alert(err?.response?.data?.message || "Failed to update loan due date.");
+      return false;
+    }
+  };
+
   return {
     recentIssues: filteredIssues,
     allIssues: recentIssues,
@@ -374,6 +423,7 @@ export const useTransactionHook = () => {
     handleCompleteReturn,
     handleReturnLoanDirect,
     handlePayFine,
+    handleExtendLoanDueDate,
     refreshTransactions: fetchTransactions,
   };
 };

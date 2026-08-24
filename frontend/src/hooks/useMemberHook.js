@@ -88,6 +88,18 @@ export const useMemberHook = () => {
   const [recentIssues, setRecentIssues] = useState([]);
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [students, setStudents] = useState([]);
+  const [recentLogins, setRecentLogins] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("recent_logins") || "[]");
+      if (Array.isArray(stored) && stored.length > 0) return stored;
+    } catch (e) {}
+    return [
+      { id: "LOG-1", name: "Muhammad Imran", email: "imran@gmail.com", role: "Teacher", loginTime: "Just now" },
+      { id: "LOG-2", name: "Muhammad Nouman", email: "nouman@gmail.com", role: "Student", loginTime: "10 mins ago" },
+      { id: "LOG-3", name: "Muhammad Haris", email: "haris@gmail.com", role: "Teacher", loginTime: "25 mins ago" },
+      { id: "LOG-4", name: "Hassan Kamran", email: "hassan@gmail.com", role: "Student", loginTime: "1 hour ago" },
+    ];
+  });
   const [selectedDept, setSelectedDept] = useState("All");
   const [loading, setLoading] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
@@ -360,6 +372,7 @@ export const useMemberHook = () => {
     users: filteredStudents,
     allStudents: students,
     allUsers: students,
+    recentLogins,
     searchQuery: searchParamQuery,
     setSearchQuery,
     selectedDept,

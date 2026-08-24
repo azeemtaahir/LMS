@@ -31,4 +31,14 @@ export const transactionService = {
     }
     return loan;
   },
+
+  async updateDueDate(id, dueDate) {
+    const loan = await LoanModel.updateDueDate(id, dueDate);
+    if (!loan) {
+      const err = new Error('Loan record not found');
+      err.status = 404;
+      throw err;
+    }
+    return loan;
+  },
 };

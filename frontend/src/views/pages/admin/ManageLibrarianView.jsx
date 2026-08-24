@@ -119,28 +119,6 @@ export default function ManageLibrarianView() {
         </div>
       ) : (
         <>
-          {/* Controls Toolbar: Search & Register Button */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-              <input
-                type="text"
-                placeholder="Search name, email, phone, ID..."
-                value={searchQuery || ""}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleOpenRegisterForm}
-              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-xs cursor-pointer"
-            >
-              <Plus size={15} /> Add Librarian
-            </button>
-          </div>
-
           {/* Librarians Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">

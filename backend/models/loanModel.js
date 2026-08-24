@@ -166,6 +166,38 @@ export class LoanModel {
       }
     }
 
+    // 6. Enforce rule: One member can never take the same book title (or same ISBN) at a time
+    if (effectiveBookId && effectiveMemberId) {
+      const targetBookRes = await lms.query('SELECT id, title, isbn FROM book WHERE id = $1', [effectiveBookId]);
+      if (targetBookRes.rows.length > 0) {
+        const targetBook = targetBookRes.rows[0];
+        const targetTitle = targetBook.title ? targetBook.title.trim() : '';
+        const targetIsbn = targetBook.isbn ? targetBook.isbn.trim() : '';
+
+        const duplicateCheckRes = await lms.query(
+          `SELECT l.id, b.title, b.isbn
+           FROM loan l
+           JOIN book b ON l.book_id = b.id
+           WHERE l.member_id = $1
+             AND l.returned_date IS NULL
+             AND (
+               l.book_id = $2
+               OR ($3 <> '' AND LOWER(TRIM(b.title)) = LOWER($3))
+               OR ($4 <> '' AND TRIM(b.isbn) <> '' AND LOWER(TRIM(b.isbn)) = LOWER($4))
+             )`,
+          [effectiveMemberId, effectiveBookId, targetTitle, targetIsbn]
+        );
+
+        if (duplicateCheckRes.rows.length > 0) {
+          const matchedLoan = duplicateCheckRes.rows[0];
+          const errMessage = `Member already has an active loan for '${matchedLoan.title}'. One person can never take the same book title at a time.`;
+          const err = new Error(errMessage);
+          err.status = 400;
+          throw err;
+        }
+      }
+    }
+
     let result;
     if (dueDateVal) {
       result = await lms.query(
@@ -211,6 +243,15 @@ export class LoanModel {
     const result = await lms.query(
       'UPDATE loan SET returned_date = CURRENT_DATE WHERE id = $1 RETURNING *',
       [id]
+    );
+    await FineModel.syncOverdueFines();
+    return result.rows[0] || null;
+  }
+
+  static async updateDueDate(id, dueDate) {
+    const result = await lms.query(
+      'UPDATE loan SET due_date = $1 WHERE id = $2 RETURNING *',
+      [dueDate, id]
     );
     await FineModel.syncOverdueFines();
     return result.rows[0] || null;

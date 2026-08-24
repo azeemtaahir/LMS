@@ -1,104 +1,433 @@
-import { useState } from "react";
-import { Filter, Download, FileSpreadsheet, BarChart2, PieChart, Users, Sparkles, TrendingUp } from "lucide-react";
-import { useMemberHook } from "../../../hooks/useMemberHook";
-import { useTransactionHook } from "../../../hooks/useTransactionHook";
+import { useState, useMemo, useEffect } from "react";
+import api from "../../../api/api";
+import {
+  Filter,
+  Download,
+  FileSpreadsheet,
+  BarChart2,
+  PieChart,
+  Users,
+  Sparkles,
+  TrendingUp,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  Printer
+} from "lucide-react";
+import { useMemberController } from "../../../hooks/useMemberHook";
+import { useTransactionController } from "../../../hooks/useTransactionHook";
+import { useBookController } from "../../../hooks/useBookHook";
 
 export default function ReportsView() {
-  const [dateFrom, setDateFrom] = useState("2024-05-01");
-  const [dateTo, setDateTo] = useState("2024-05-31");
-  const { students } = useMemberHook();
-  const { overdueBooks } = useTransactionHook();
+  const { students } = useMemberController();
+  const { allIssues, recentIssues, overdueBooks, refreshTransactions } = useTransactionController();
+  const { books } = useBookController();
 
-  const topBorrowedBooks = [];
+  // Date Filter State
+  const defaultFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultTo = new Date().toISOString().split("T")[0];
+
+  const [dateFrom, setDateFrom] = useState(defaultFrom);
+  const [dateTo, setDateTo] = useState(defaultTo);
+  const [activePreset, setActivePreset] = useState("30days");
+  const [dbAnalytics, setDbAnalytics] = useState(null);
+
+  // Fetch reports directly from backend database & listen for live loan updates
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDbReports = async () => {
+      try {
+        if (refreshTransactions) {
+          await refreshTransactions();
+        }
+        const res = await api.get("/reports", {
+          params: { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined }
+        });
+        if (isMounted && res.data) {
+          setDbAnalytics(res.data);
+        }
+      } catch (err) {
+        console.warn("Backend reports API notice, using synced local dataset:", err?.message);
+      }
+    };
+    fetchDbReports();
+
+    window.addEventListener("book-updated", fetchDbReports);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("book-updated", fetchDbReports);
+    };
+  }, [dateFrom, dateTo, refreshTransactions]);
+
+  const rawIssuesList = (allIssues && allIssues.length > 0) ? allIssues : (recentIssues || []);
+
+  // Filter issues by date range
+  const filteredIssues = useMemo(() => {
+    return rawIssuesList.filter((item) => {
+      const issueDateStr = item.issueDate || item.loan_date;
+      if (!issueDateStr) return true;
+      const dStr = String(issueDateStr).split("T")[0];
+      if (dateFrom && dStr < dateFrom) return false;
+      if (dateTo && dStr > dateTo) return false;
+      return true;
+    });
+  }, [rawIssuesList, dateFrom, dateTo]);
+
+  // Apply Quick Date Presets
+  const handlePresetChange = (preset) => {
+    setActivePreset(preset);
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+
+    if (preset === "30days") {
+      const past30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      setDateFrom(past30);
+      setDateTo(todayStr);
+    } else if (preset === "thisMonth") {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
+      setDateFrom(firstDay);
+      setDateTo(todayStr);
+    } else if (preset === "thisYear") {
+      const jan1 = `${today.getFullYear()}-01-01`;
+      setDateFrom(jan1);
+      setDateTo(todayStr);
+    } else if (preset === "allTime") {
+      setDateFrom("");
+      setDateTo("");
+    }
+  };
+
+  // Reset Filters
+  const handleResetFilters = () => {
+    setActivePreset("30days");
+    setDateFrom(defaultFrom);
+    setDateTo(defaultTo);
+  };
+
+  // Compute Top Borrowed Books dynamically
+  const topBorrowedBooks = useMemo(() => {
+    const counts = {};
+    filteredIssues.forEach((issue) => {
+      const title = issue.bookTitle || issue.title || "Unknown Book";
+      if (!counts[title]) {
+        counts[title] = { title, count: 0, category: issue.category || "General" };
+      }
+      counts[title].count += 1;
+    });
+
+    const sorted = Object.values(counts).sort((a, b) => b.count - a.count);
+    const maxCount = sorted[0]?.count || 1;
+
+    return sorted.slice(0, 5).map((item, index) => ({
+      rank: index + 1,
+      title: item.title,
+      category: item.category,
+      count: item.count,
+      percentage: Math.round((item.count / maxCount) * 100),
+    }));
+  }, [filteredIssues]);
+
+  // Compute Monthly Circulation Trend (Dynamic timeline calculation)
+  const monthlyData = useMemo(() => {
+    const monthMap = {};
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const today = new Date();
+
+    const refDate = dateTo ? new Date(dateTo) : today;
+    const refValid = !isNaN(refDate.getTime()) ? refDate : today;
+
+    // Initialize 6 consecutive months ending at selected end date
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(refValid.getFullYear(), refValid.getMonth() - i, 1);
+      const key = `${months[d.getMonth()]} ${d.getFullYear()}`;
+      const monthLabel = months[d.getMonth()];
+      monthMap[key] = { month: monthLabel, fullKey: key, val: 0, issued: 0, returned: 0 };
+    }
+
+    // Process all issues in memory for monthly trend
+    rawIssuesList.forEach((issue) => {
+      const dateStr = issue.issueDate || issue.loan_date || issue.created_at;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const key = `${months[d.getMonth()]} ${d.getFullYear()}`;
+          if (monthMap[key]) {
+            monthMap[key].issued += 1;
+            monthMap[key].val += 1;
+            if (issue.status === "Returned" || issue.returned_date || issue.returnDate) {
+              monthMap[key].returned += 1;
+            }
+          }
+        }
+      }
+    });
+
+    // Merge backend dbAnalytics if available
+    if (dbAnalytics && dbAnalytics.monthlyTrend && dbAnalytics.monthlyTrend.length > 0) {
+      dbAnalytics.monthlyTrend.forEach((item) => {
+        const matchingKey = Object.keys(monthMap).find((k) =>
+          k.toLowerCase().includes(String(item.month || "").toLowerCase()) ||
+          (item.full_key && k.toLowerCase().includes(String(item.full_key).toLowerCase()))
+        );
+        if (matchingKey && monthMap[matchingKey]) {
+          const dbCount = Number(item.count || 0);
+          monthMap[matchingKey].val = Math.max(monthMap[matchingKey].val, dbCount);
+          monthMap[matchingKey].issued = Math.max(monthMap[matchingKey].issued, dbCount);
+        }
+      });
+    }
+
+    return Object.values(monthMap);
+  }, [rawIssuesList, dbAnalytics, dateFrom, dateTo]);
+
+  // Status Counts (Live DB Summary or Local Sync)
+  const returnedCount = dbAnalytics?.summary?.returned_count ?? filteredIssues.filter(
+    (i) => i.status === "Returned" || i.fineStatus === "Paid" || i.fine_status === "Paid" || Boolean(i.returned_date) || Boolean(i.actualReturnedDate)
+  ).length;
+
+  const issuedCount = dbAnalytics?.summary?.issued_count ?? filteredIssues.filter(
+    (i) => i.status === "Issued" && !i.returned_date && !i.actualReturnedDate
+  ).length;
+
+  const overdueCount = dbAnalytics?.summary?.overdue_count ?? filteredIssues.filter(
+    (i) => i.status === "Overdue" && i.status !== "Returned" && !i.returned_date && !i.actualReturnedDate
+  ).length;
+
+  const totalPeriodIssues = dbAnalytics?.summary?.total_loans ?? filteredIssues.length;
+
+  const returnRatePercent = totalPeriodIssues > 0 ? Math.round((returnedCount / totalPeriodIssues) * 100) : 100;
+
+  // Export to CSV / Excel File
+  const handleExportCSV = () => {
+    if (filteredIssues.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = ["Loan ID", "Borrower Name", "Book Title", "Issue Date", "Due Date", "Status"];
+    const rows = filteredIssues.map((item) => [
+      item.id,
+      `"${(item.studentName || "").replace(/"/g, '""')}"`,
+      `"${(item.bookTitle || "").replace(/"/g, '""')}"`,
+      item.issueDate || item.loan_date || "",
+      item.dueDate || item.returnDate || "",
+      item.status || "Issued",
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Library_Circulation_Report_${dateFrom}_to_${dateTo}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export PDF / Print Action
+  const handlePrintPDF = () => {
+    window.print();
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+    <div className="max-w-7xl mx-auto space-y-4 pb-10 select-none">
       {/* Hero Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-xl flex items-center justify-between">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-5 rounded-2xl text-white shadow-xl flex items-center justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold mb-1 border border-indigo-500/30">
-            <Sparkles size={13} className="text-amber-400 fill-amber-400" />
-            <span>Library Intelligence</span>
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold mb-1 border border-indigo-500/30">
+            <Sparkles size={12} className="text-amber-400 fill-amber-400" />
+            <span>Library Intelligence & Analytics</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Reports & Analytics</h1>
-          <p className="text-xs text-slate-300 mt-1">Generate circulation reports, monitor monthly trend metrics, and export data summaries.</p>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight">Reports & Analytics Hub</h1>
+          <p className="text-[11px] text-slate-300 mt-0.5 max-w-2xl">
+            Real-time circulation analytics, top borrowed titles, monthly trends, and export options.
+          </p>
         </div>
-        <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-500/40 items-center justify-center text-indigo-300 shrink-0">
-          <BarChart2 size={24} />
+        <div className="hidden sm:flex w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-500/40 items-center justify-center text-indigo-300 shrink-0">
+          <BarChart2 size={20} />
         </div>
       </div>
 
-      {/* Date Filter & Export Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-        {/* Date Controls */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto text-xs">
-          <div className="flex items-center gap-2">
-            <label className="font-bold text-slate-700">From:</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white font-medium"
-            />
+      {/* Date Filter & Preset Controls */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between border-b border-slate-100 pb-2.5">
+          {/* Preset Buttons */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-700 mr-1 flex items-center gap-1">
+              <Calendar size={13} className="text-indigo-600" /> Date Preset:
+            </span>
+            {[
+              { id: "30days", label: "Last 30 Days" },
+              { id: "thisMonth", label: "This Month" },
+              { id: "thisYear", label: "This Year" },
+              { id: "allTime", label: "All Time" },
+            ].map((p) => (
+              <button
+                key={p.id}
+                onClick={() => handlePresetChange(p.id)}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition border cursor-pointer ${
+                  activePreset === p.id
+                    ? "bg-indigo-600 border-indigo-500 text-white shadow-xs"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <label className="font-bold text-slate-700">To:</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white font-medium"
-            />
+
+          {/* Export Buttons */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={handlePrintPDF}
+              className="px-3 py-1 rounded-lg border border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100 font-semibold text-[11px] transition cursor-pointer flex items-center gap-1"
+              title="Print / Save as PDF"
+            >
+              <Printer size={13} className="text-slate-600" />
+              <span>Print / PDF</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-1 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-[11px] transition cursor-pointer flex items-center gap-1"
+              title="Export as CSV Spreadsheet"
+            >
+              <FileSpreadsheet size={13} />
+              <span>Export CSV</span>
+            </button>
           </div>
-          <button className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all duration-200 shadow-md shadow-indigo-600/20 active:scale-98 cursor-pointer flex items-center gap-1.5">
-            <Filter size={14} />
-            <span>Apply Filter</span>
-          </button>
         </div>
 
-        {/* Export Buttons */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
-          <button className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100 font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-            <Download size={14} />
-            <span>Export PDF</span>
-          </button>
-          <button className="px-4 py-2 rounded-xl border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-            <FileSpreadsheet size={14} />
-            <span>Export Excel</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Analytics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Most Borrowed Books */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={18} className="text-indigo-600" />
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Most Borrowed Books</h3>
+        {/* Custom Date Inputs */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
+              <label className="font-bold text-slate-700 text-[11px]">From:</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setActivePreset("custom");
+                }}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:ring-1 focus:ring-indigo-500 text-[11px] font-medium"
+              />
             </div>
-            <span className="badge-indigo text-[10px] px-2.5 py-0.5 rounded-full font-bold">Top Ranked</span>
+            <div className="flex items-center gap-1.5">
+              <label className="font-bold text-slate-700 text-[11px]">To:</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setActivePreset("custom");
+                }}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:ring-1 focus:ring-indigo-500 text-[11px] font-medium"
+              />
+            </div>
+            <button
+              onClick={handleResetFilters}
+              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-[11px] font-medium transition cursor-pointer flex items-center gap-1"
+            >
+              <RotateCcw size={12} />
+              <span>Reset</span>
+            </button>
           </div>
 
-          <div className="space-y-3">
+          <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+            {filteredIssues.length} Records Found
+          </span>
+        </div>
+      </div>
+
+      {/* Metrics Highlights Bar */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Borrowed</span>
+            <div className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">{totalPeriodIssues}</div>
+            <p className="text-[9px] text-indigo-600 font-semibold mt-0.5">Selected date range</p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0 border border-indigo-100">
+            <BookOpen size={16} />
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Returned Books</span>
+            <div className="text-xl font-extrabold text-emerald-600 tracking-tight mt-0.5">{returnedCount}</div>
+            <p className="text-[9px] text-emerald-600 font-semibold mt-0.5">{returnRatePercent}% Return Rate</p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+            <CheckCircle2 size={16} />
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Currently Issued</span>
+            <div className="text-xl font-extrabold text-amber-600 tracking-tight mt-0.5">{issuedCount}</div>
+            <p className="text-[9px] text-amber-600 font-semibold mt-0.5">Active loans out</p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0 border border-amber-100">
+            <Calendar size={16} />
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Overdue Notices</span>
+            <div className="text-xl font-extrabold text-rose-600 tracking-tight mt-0.5">{overdueCount}</div>
+            <p className="text-[9px] text-rose-600 font-semibold mt-0.5">Pending returns</p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0 border border-rose-100">
+            <AlertTriangle size={16} />
+          </div>
+        </div>
+      </div>
+
+      {/* Analytics Grid: Ranking & Monthly Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Most Borrowed Books Ranking */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} className="text-indigo-600" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Top 5 Most Borrowed Books</h3>
+            </div>
+            <span className="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-indigo-200">
+              Live Ranking
+            </span>
+          </div>
+
+          <div className="space-y-2">
             {topBorrowedBooks.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">No borrowing data recorded yet.</p>
+              <p className="text-xs text-slate-400 py-4 text-center">No borrowing data recorded for this date range.</p>
             ) : (
               topBorrowedBooks.map((item) => (
-                <div key={item.rank} className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
-                  <div className="flex items-center gap-3.5">
-                    <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-indigo-600/20">
-                      #{item.rank}
-                    </span>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800">{item.title}</h4>
-                      <span className="text-[10px] font-medium text-slate-400">{item.category}</span>
+                <div key={item.rank} className="p-2 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-5 h-5 rounded-md bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                        #{item.rank}
+                      </span>
+                      <div className="truncate">
+                        <h4 className="text-xs font-bold text-slate-800 truncate">{item.title}</h4>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-extrabold text-indigo-600">{item.count}</span>
+                      <span className="text-[10px] text-slate-400 font-medium ml-1">loans</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm font-extrabold text-indigo-600">{item.count}</span>
-                    <span className="text-[10px] text-slate-400 block font-medium">Loans</span>
+                  {/* Compact Progress bar */}
+                  <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
+                    <div
+                      className="bg-indigo-600 h-1 rounded-full transition-all duration-300"
+                      style={{ width: `${item.percentage}%` }}
+                    />
                   </div>
                 </div>
               ))
@@ -106,62 +435,115 @@ export default function ReportsView() {
           </div>
         </div>
 
-        {/* Monthly Issued Books Chart */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Monthly Circulation Trend</h3>
-            <BarChart2 size={18} className="text-indigo-600" />
-          </div>
-
-          {/* Bar Chart Visualization */}
-          <div className="h-48 flex items-end justify-between gap-3 pt-6 px-2">
-            {[
-              { month: "Jan", val: 0 },
-              { month: "Feb", val: 0 },
-              { month: "Mar", val: 0 },
-              { month: "Apr", val: 0 },
-              { month: "May", val: 0 },
-              { month: "Jun", val: 0 },
-            ].map((bar) => (
-              <div key={bar.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                <span className="text-[10px] font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {bar.val}
-                </span>
-                <div
-                  className="w-full bg-gradient-to-t from-indigo-600 to-indigo-500 rounded-t-xl hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-md shadow-indigo-600/20"
-                  style={{ height: `${Math.max(bar.val, 4)}%` }}
-                />
-                <span className="text-[11px] font-semibold text-slate-500">{bar.month}</span>
+        {/* Monthly Circulation Trend SVG Area & Line Chart */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <BarChart2 size={16} className="text-indigo-600" />
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Monthly Circulation Trend</h3>
               </div>
-            ))}
-          </div>
-        </div>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
+                Area Curve • Last 6 Months
+              </span>
+            </div>
 
-        {/* Active Students Card */}
-        <div className="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active Registered Students</span>
-            <div className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1">{students.length} Students</div>
-            <p className="text-[11px] text-slate-400 font-semibold mt-1">Live database total</p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
-            <Users size={24} />
-          </div>
-        </div>
+            {/* Large White Canvas SVG Area & Line Chart (280px height) */}
+            <div className="pt-2 px-1 relative">
+              <svg viewBox="0 0 340 210" className="w-full h-[280px] overflow-visible">
+                <defs>
+                  <linearGradient id="circGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
 
-        {/* Overdue Books Summary Card */}
-        <div className="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Overdue Books Pending</span>
-            <div className="text-2xl font-extrabold text-rose-600 tracking-tight mt-1">{overdueBooks.length} Overdue</div>
-            <p className="text-[11px] text-slate-400 font-semibold mt-1">Live database total</p>
+                {/* Horizontal Gridlines */}
+                <line x1="20" y1="25" x2="320" y2="25" stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
+                <line x1="20" y1="77" x2="320" y2="77" stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
+                <line x1="20" y1="128" x2="320" y2="128" stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
+                <line x1="20" y1="180" x2="320" y2="180" stroke="#cbd5e1" strokeWidth="1.5" />
+
+                {/* Y-Axis Value Labels */}
+                <text x="5" y="28" fill="#94a3b8" fontSize="9" fontWeight="bold">{Math.max(...monthlyData.map(m=>m.val), 5)}</text>
+                <text x="5" y="80" fill="#94a3b8" fontSize="9" fontWeight="bold">{Math.round(Math.max(...monthlyData.map(m=>m.val), 5) * 0.7)}</text>
+                <text x="5" y="131" fill="#94a3b8" fontSize="9" fontWeight="bold">{Math.round(Math.max(...monthlyData.map(m=>m.val), 5) * 0.3)}</text>
+                <text x="5" y="183" fill="#94a3b8" fontSize="9" fontWeight="bold">0</text>
+
+                {/* Compute SVG Path */}
+                {(() => {
+                  const maxV = Math.max(...monthlyData.map(m => m.val), 5);
+                  const pts = monthlyData.map((m, idx) => {
+                    const x = 30 + (idx / Math.max(monthlyData.length - 1, 1)) * 280;
+                    const y = 180 - (m.val / maxV) * 155;
+                    return { ...m, x, y };
+                  });
+
+                  const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                  const areaD = `${lineD} L ${pts[pts.length - 1].x} 180 L ${pts[0].x} 180 Z`;
+
+                  return (
+                    <g>
+                      {/* Gradient Area */}
+                      <path d={areaD} fill="url(#circGradient)" />
+
+                      {/* Smooth Line */}
+                      <path d={lineD} fill="none" stroke="#4f46e5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                      {/* Nodes & Data Labels */}
+                      {pts.map((p, i) => (
+                        <g key={i} className="group cursor-pointer">
+                          {/* Value Badge above node */}
+                          <text
+                            x={p.x}
+                            y={p.y - 9}
+                            textAnchor="middle"
+                            fill={p.val > 0 ? "#4338ca" : "#94a3b8"}
+                            fontSize="11"
+                            fontWeight="bold"
+                          >
+                            {p.val}
+                          </text>
+
+                          {/* Node Circle */}
+                          <circle
+                            cx={p.x}
+                            cy={p.y}
+                            r={p.val > 0 ? "5" : "3.5"}
+                            fill={p.val > 0 ? "#4f46e5" : "#cbd5e1"}
+                            stroke="#ffffff"
+                            strokeWidth="2.5"
+                            className="transition-all duration-200 hover:r-7"
+                          />
+
+                          {/* X-Axis Month Label */}
+                          <text
+                            x={p.x}
+                            y="200"
+                            textAnchor="middle"
+                            fill="#475569"
+                            fontSize="11"
+                            fontWeight="600"
+                          >
+                            {p.month}
+                          </text>
+                        </g>
+                      ))}
+                    </g>
+                  );
+                })()}
+              </svg>
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-lg shrink-0">
-            <PieChart size={24} />
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Peak Circulation Month</span>
+            <span className="font-bold text-indigo-600">
+              {monthlyData.reduce((prev, curr) => (curr.val > prev.val ? curr : prev), monthlyData[0] || {}).month || "N/A"}
+            </span>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

@@ -21,6 +21,7 @@ import userRoleRoutes from './routes/user-roles.js';
 import rolePermissionRoutes from './routes/role-permissions.js';
 import auditLogRoutes from './routes/audit-logs.js';
 import librarianRoutes from './routes/librarians.js';
+import reportRoutes from './routes/reports.js';
 
 // ==========================================
 // 1. AUTH ROUTE IMPORT
@@ -71,6 +72,7 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/user-roles', userRoleRoutes);
 app.use('/api/role-permissions', rolePermissionRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/reports', reportRoutes);
 
 // ==========================================
 // 3. AUTH API ROUTE ATTACHMENT
