@@ -1,18 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
-import { Eye, ChevronLeft, ChevronRight, DollarSign } from "lucide-react";
+import { Eye, ChevronLeft, ChevronRight, DollarSign, Receipt, CheckCircle, Clock } from "lucide-react";
+import api from "../../../api/api";
 
 export default function ReturnBookView() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     allIssues,
     handleReturnLoanDirect,
     handlePayFine,
   } = useTransactionController();
 
+  const isRecordsView = searchParams.get("records") === "true";
   const [currentPage, setCurrentPage] = useState(1);
+  const [finePaymentHistory, setFinePaymentHistory] = useState([]);
   const ITEMS_PER_PAGE = 5;
 
-  const records = (allIssues || []).filter((item, index, self) => {
+  // Fetch fine_payment records from backend
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPayments = async () => {
+      try {
+        const res = await api.get("/fine-payments");
+        if (isMounted && res.data?.payments) {
+          setFinePaymentHistory(res.data.payments);
+        }
+      } catch (err) {
+        console.warn("Could not fetch fine-payments:", err?.message);
+      }
+    };
+    fetchPayments();
+    return () => { isMounted = false; };
+  }, [allIssues]);
+
+  // Pending fines: Overdue books that are NOT yet paid or returned
+  const pendingRecords = (allIssues || []).filter((item, index, self) => {
     const finePkr = Number(item.fineAmount) || 0;
     const isPaid = item.fineStatus === "Paid" || item.fine_status === "Paid";
     const isReturned = item.status === "Returned";
@@ -20,9 +43,27 @@ export default function ReturnBookView() {
     const isFirst = self.findIndex((t) => t.id === item.id) === index;
     return isFirst && (item.status === "Overdue" || finePkr > 0);
   });
-  const totalPages = Math.ceil(records.length / ITEMS_PER_PAGE);
+
+  // Paid fine records: strictly records where DUE DATE WAS OVER (overdue) AND fine is PAID
+  const paidRecords = (allIssues || []).filter((item, index, self) => {
+    const isPaid = item.fineStatus === "Paid" || item.fine_status === "Paid";
+
+    const dueDateStr = item.dueDate || item.due_date || item.returnDate;
+    const issueDateStr = item.issueDate || item.loan_date;
+    const dueDate = dueDateStr ? new Date(dueDateStr) : (issueDateStr ? new Date(new Date(issueDateStr).getTime() + 14 * 24 * 3600 * 1000) : null);
+    const endDate = item.returned_date ? new Date(item.returned_date) : new Date();
+
+    const diffDays = dueDate && !isNaN(dueDate.getTime()) ? Math.ceil((endDate.getTime() - dueDate.getTime()) / (1000 * 3600 * 24)) : 0;
+    const wasOverdue = diffDays > 0 || (Number(item.overdueDays) || 0) > 0 || (Number(item.overdueWeeks) || 0) > 0;
+
+    const isFirst = self.findIndex((t) => t.id === item.id) === index;
+    return isFirst && isPaid && wasOverdue;
+  });
+
+  const activeList = isRecordsView ? paidRecords : pendingRecords;
+  const totalPages = Math.ceil(activeList.length / ITEMS_PER_PAGE);
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-  const currentRecords = records.slice(
+  const currentRecords = activeList.slice(
     (validCurrentPage - 1) * ITEMS_PER_PAGE,
     validCurrentPage * ITEMS_PER_PAGE
   );
@@ -44,9 +85,20 @@ export default function ReturnBookView() {
     return pages;
   };
 
+  const toggleView = (showRecords) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (showRecords) {
+      newParams.set("records", "true");
+    } else {
+      newParams.delete("records");
+    }
+    setSearchParams(newParams, { replace: true });
+    setCurrentPage(1);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-4 pb-12 select-none">
-      {/* Records Table Matching Screenshot Structure */}
+      {/* Main Records Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -57,7 +109,7 @@ export default function ReturnBookView() {
                 <th className="py-4 px-5">BOOK TITLE</th>
                 <th className="py-4 px-5">ISSUE DATE</th>
                 <th className="py-4 px-5">DUE DATE</th>
-                <th className="py-4 px-5">FINE (500 PKR/WK)</th>
+                <th className="py-4 px-5">{isRecordsView ? "FINE PAID" : "FINE (500 PKR/WK)"}</th>
                 <th className="py-4 px-5">STATUS</th>
                 <th className="py-4 px-5 text-center">ACTIONS</th>
               </tr>
@@ -66,14 +118,16 @@ export default function ReturnBookView() {
               {currentRecords.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-12 text-center text-slate-400 font-medium">
-                    No pending fine records found.
+                    {isRecordsView 
+                      ? "No completed fine payment records found."
+                      : "No pending fine records found."}
                   </td>
                 </tr>
               ) : (
                 currentRecords.map((item) => {
-                  const isReturned = item.status === "Returned" || item.fineStatus === "Paid" || item.fine_status === "Paid";
-                  const finePkr = isReturned ? 0 : (item.fineAmount || 0);
-                  const isOverdue = !isReturned && (item.status === "Overdue" || finePkr > 0);
+                  const isPaid = item.fineStatus === "Paid" || item.fine_status === "Paid";
+                  const isReturned = item.status === "Returned" || isPaid;
+                  const finePkr = isReturned ? (isPaid ? (item.fineAmount || 500) : 0) : (item.fineAmount || 0);
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
@@ -86,7 +140,7 @@ export default function ReturnBookView() {
                       </td>
                       <td className="py-4 px-5 text-slate-600 font-medium">{item.issueDate || "2026-08-21"}</td>
                       <td className="py-4 px-5 text-slate-600 font-medium">{item.dueDate || item.returnDate || "2026-09-04"}</td>
-                      <td className="py-4 px-5 font-extrabold text-rose-600">
+                      <td className={`py-4 px-5 font-extrabold ${isReturned ? "text-emerald-600" : "text-rose-600"}`}>
                         {finePkr} PKR
                       </td>
                       <td className="py-4 px-5">
@@ -94,9 +148,7 @@ export default function ReturnBookView() {
                           className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold ${
                             isReturned
                               ? "bg-emerald-100 text-emerald-700"
-                              : isOverdue
-                              ? "bg-rose-100 text-rose-700"
-                              : "bg-amber-100 text-amber-800"
+                              : "bg-rose-100 text-rose-700"
                           }`}
                         >
                           {isReturned ? "Returned" : (item.status || "Overdue")}
@@ -104,7 +156,7 @@ export default function ReturnBookView() {
                       </td>
                       <td className="py-4 px-5 text-center">
                         <div className="flex items-center justify-center gap-3">
-                          {isOverdue ? (
+                          {!isReturned ? (
                             <button
                               onClick={() => handlePayFine(item)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer shadow-xs"
@@ -113,7 +165,10 @@ export default function ReturnBookView() {
                               <span>Fine Paid</span>
                             </button>
                           ) : (
-                            <span className="text-slate-400 italic text-xs font-medium">Completed</span>
+                            <span className="inline-flex items-center gap-1 text-slate-500 italic text-xs font-semibold">
+                              <CheckCircle size={13} className="text-emerald-600" />
+                              <span>Completed</span>
+                            </span>
                           )}
                           <button
                             onClick={() => handleReturnLoanDirect(item)}
@@ -132,11 +187,11 @@ export default function ReturnBookView() {
           </table>
         </div>
 
-        {/* Pagination Footer Matching Screenshot */}
+        {/* Pagination Footer */}
         <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50 text-xs">
           <span className="text-slate-500 font-medium">
-            Showing {(validCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-            {Math.min(validCurrentPage * ITEMS_PER_PAGE, records.length)} of {records.length} records
+            Showing {activeList.length === 0 ? 0 : (validCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+            {Math.min(validCurrentPage * ITEMS_PER_PAGE, activeList.length)} of {activeList.length} records
           </span>
 
           {totalPages > 1 && (

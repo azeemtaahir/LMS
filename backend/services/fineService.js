@@ -9,7 +9,7 @@ export const fineService = {
     return await FineModel.create({ member_id, loan_id, fine_amount });
   },
 
-  async payFine({ member_id, payment_amount }) {
-    return await FineModel.payFine({ member_id, payment_amount });
+  async payFine(data) {
+    return await FineModel.payFine(data);
   }
 };

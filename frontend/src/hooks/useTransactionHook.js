@@ -55,7 +55,7 @@ export const useTransactionHook = () => {
 
   const computeLoanFine = (loan) => {
     const isPaid = loan.fineStatus === "Paid" || loan.fine_status === "Paid";
-    if (loan.status === "Returned") {
+    if (loan.status === "Returned" || isPaid) {
       return { fineAmount: 0, status: "Returned", overdueDays: 0, overdueWeeks: 0, fineStatus: isPaid ? "Paid" : "Unpaid" };
     }
 
@@ -67,7 +67,7 @@ export const useTransactionHook = () => {
     if (!dueDate || isNaN(dueDate.getTime())) {
       return { 
         fineAmount: isPaid ? 0 : (Number(loan.fineAmount) || 0), 
-        status: loan.status || "Issued", 
+        status: (loan.status === "Returned" || isPaid) ? "Returned" : (loan.status || "Issued"), 
         overdueDays: 0, 
         overdueWeeks: 0,
         fineStatus: isPaid ? "Paid" : (loan.fineStatus || loan.fine_status || "Unpaid")
@@ -81,7 +81,7 @@ export const useTransactionHook = () => {
     if (diffDays <= 0) {
       return { 
         fineAmount: 0, 
-        status: loan.status || "Issued", 
+        status: (loan.status === "Returned" || isPaid) ? "Returned" : (loan.status || "Issued"), 
         overdueDays: 0, 
         overdueWeeks: 0,
         fineStatus: isPaid ? "Paid" : "Unpaid"
@@ -90,7 +90,7 @@ export const useTransactionHook = () => {
 
     const overdueWeeks = Math.ceil(diffDays / 7);
     const fineAmount = isPaid ? 0 : overdueWeeks * 500; // 500 PKR per week
-    const status = loan.status === "Returned" ? "Returned" : "Overdue";
+    const status = (loan.status === "Returned" || isPaid) ? "Returned" : "Overdue";
 
     return { 
       fineAmount, 
@@ -303,22 +303,29 @@ export const useTransactionHook = () => {
     if (!loanItem) return;
     try {
       const fineAmount = loanItem.fineAmount || 500;
+      const targetLoanId = loanItem.loan_id || loanItem.id;
+      const targetMemberId = loanItem.member_id || loanItem.memberId || loanItem.studentId;
+
       try {
         await api.post("/fines/pay", {
-          member_id: loanItem.member_id || loanItem.memberId || loanItem.studentId || loanItem.id,
-          loan_id: loanItem.loan_id || loanItem.id,
-          fine_id: loanItem.fine_id || loanItem.id,
+          member_id: targetMemberId,
+          loan_id: targetLoanId,
+          fine_id: loanItem.fine_id || targetLoanId,
           payment_amount: fineAmount,
         });
       } catch (err) {
         console.warn("API POST /fines/pay fallback:", err?.message);
       }
 
+      const todayStr = getTodayStr();
+
       setRecentIssues((prev) =>
         prev.map((item) =>
-          item.id === loanItem.id || item.id === loanItem.loan_id
+          item.id === loanItem.id || item.id === targetLoanId
             ? {
                 ...item,
+                status: "Returned",
+                returned_date: todayStr,
                 fineStatus: "Paid",
                 fine_status: "Paid",
                 fineAmount: 0,
@@ -328,7 +335,8 @@ export const useTransactionHook = () => {
       );
 
       await fetchTransactions();
-      alert(`Fine of ${fineAmount} PKR marked as Paid for "${loanItem.studentName || "Member"}"!`);
+      window.dispatchEvent(new Event("book-updated"));
+      alert(`Fine of ${fineAmount} PKR marked as Paid for "${loanItem.studentName || "Member"}"! Issued book status updated to Returned.`);
     } catch (err) {
       console.error("Pay fine error", err);
     }

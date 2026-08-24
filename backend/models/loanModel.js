@@ -42,7 +42,7 @@ export class LoanModel {
         COALESCE(TRIM(CONCAT(m.first_name, ' ', m.last_name)), m.email, 'Student') AS "studentName",
         m.user_id AS "studentId",
         CASE 
-          WHEN l.returned_date IS NOT NULL THEN 'Returned' 
+          WHEN l.returned_date IS NOT NULL OR f.status = 'Paid' THEN 'Returned' 
           WHEN CURRENT_DATE > COALESCE(l.due_date, (l.loan_date + 14)::date) THEN 'Overdue'
           ELSE 'Issued' 
         END AS status,

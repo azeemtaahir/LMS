@@ -101,14 +101,14 @@ export default function IssuedBooksView() {
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                          item.status === "Issued"
-                            ? "bg-amber-100 text-amber-800"
-                            : item.status === "Returned"
+                          (item.status === "Returned" || item.fineStatus === "Paid" || item.fine_status === "Paid")
                             ? "bg-emerald-100 text-emerald-800"
+                            : item.status === "Issued"
+                            ? "bg-amber-100 text-amber-800"
                             : "bg-rose-100 text-rose-800"
                         }`}
                       >
-                        {item.status}
+                        {(item.status === "Returned" || item.fineStatus === "Paid" || item.fine_status === "Paid") ? "Returned" : item.status}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">

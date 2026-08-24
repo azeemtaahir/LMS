@@ -188,7 +188,12 @@ export const useMemberHook = () => {
       const totalBooks = booksData.length;
       const totalLibrarians = librariansData.length > 0 ? librariansData.length : studentsData.filter((u) => u.role === "Librarian").length;
       const booksIssued = issuesData.filter((i) => i.status === "Issued").length;
-      const booksReturned = issuesData.filter((i) => i.status === "Returned").length;
+      const booksReturned = issuesData.filter((i) => i.status === "Returned" || i.fineStatus === "Paid" || i.fine_status === "Paid").length;
+      const overdueBooksCount = issuesData.filter((i) => {
+        const isPaid = i.fineStatus === "Paid" || i.fine_status === "Paid";
+        const isReturned = i.status === "Returned";
+        return i.status === "Overdue" && !isPaid && !isReturned;
+      }).length;
 
       setStats({
         totalBooks,
@@ -197,7 +202,7 @@ export const useMemberHook = () => {
         totalLibrarians,
         booksIssued,
         booksReturned,
-        overdueBooks: overdueData.length,
+        overdueBooks: overdueBooksCount,
         pendingFines: 0,
         categories: 0,
       });

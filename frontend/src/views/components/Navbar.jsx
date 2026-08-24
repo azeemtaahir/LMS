@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Search, Bell, User as UserIcon, Menu, PlusCircle, UserPlus, X } from "lucide-react";
+import { Search, Bell, User as UserIcon, Menu, PlusCircle, UserPlus, X, Receipt } from "lucide-react";
 
 export default function Navbar({ onToggleSidebar }) {
   const { user } = useAuth();
@@ -31,6 +31,7 @@ export default function Navbar({ onToggleSidebar }) {
   const isUsersPage = location.pathname.includes("/users") || location.pathname.includes("/students") || location.pathname === "/users";
   const isLibrariansPage = location.pathname.includes("/librarians") || location.pathname === "/librarians";
   const isIssuedBooksPage = location.pathname.includes("/transactions/issued") || location.pathname === "/issued" || location.pathname === "/issued-lib";
+  const isFineBookPage = location.pathname === "/return" || location.pathname === "/return-lib";
 
   const isAddBookOpen = searchParams.get("add") === "true";
   const isRegisterUserOpen = searchParams.get("register") === "true";
@@ -279,6 +280,29 @@ export default function Navbar({ onToggleSidebar }) {
               {isRegisterLibrarianOpen ? <X size={15} /> : <UserPlus size={15} />}
             </button>
           </>
+        )}
+
+        {isFineBookPage && (
+          <button
+            onClick={() => {
+              const currentVal = searchParams.get("records") === "true";
+              const newParams = new URLSearchParams(searchParams);
+              if (currentVal) {
+                newParams.delete("records");
+              } else {
+                newParams.set("records", "true");
+              }
+              setSearchParams(newParams, { replace: true });
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
+              searchParams.get("records") === "true"
+                ? "bg-slate-800 text-white hover:bg-slate-900"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95"
+            }`}
+          >
+            <Receipt size={15} />
+            <span>{searchParams.get("records") === "true" ? "Pending Fines" : "Fine Records"}</span>
+          </button>
         )}
 
         {isIssuedBooksPage && (
