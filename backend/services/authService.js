@@ -105,8 +105,8 @@ export const authService = {
     }
 
     const statusLower = user.status ? String(user.status).toLowerCase() : 'active';
-    if (statusLower === 'inactive' || statusLower === 'pending') {
-      const err = new Error('Your account is inactive or pending approval by an admin.');
+    if (statusLower !== 'active') {
+      const err = new Error(`Your account status is "${user.status || 'Inactive'}". Access denied. Please contact administrator.`);
       err.status = 403;
       throw err;
     }

@@ -1,12 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import api from "../../../api/api";
 import {
-  Filter,
-  Download,
   FileSpreadsheet,
   BarChart2,
-  PieChart,
-  Users,
   Sparkles,
   TrendingUp,
   BookOpen,
@@ -16,21 +12,22 @@ import {
   RotateCcw,
   Printer
 } from "lucide-react";
-import { useMemberController } from "../../../hooks/useMemberHook";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
-import { useBookController } from "../../../hooks/useBookHook";
+
+const getPastDateStr = (daysAgo) => {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().split("T")[0];
+};
+
+const getTodayStr = () => new Date().toISOString().split("T")[0];
 
 export default function ReportsView() {
-  const { students } = useMemberController();
-  const { allIssues, recentIssues, overdueBooks, refreshTransactions } = useTransactionController();
-  const { books } = useBookController();
+  const { allIssues, recentIssues, refreshTransactions } = useTransactionController();
 
-  // Date Filter State
-  const defaultFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const defaultTo = new Date().toISOString().split("T")[0];
-
-  const [dateFrom, setDateFrom] = useState(defaultFrom);
-  const [dateTo, setDateTo] = useState(defaultTo);
+  // Lazy state initializers ensure Date computations only run on initial mount
+  const [dateFrom, setDateFrom] = useState(() => getPastDateStr(30));
+  const [dateTo, setDateTo] = useState(getTodayStr);
   const [activePreset, setActivePreset] = useState("30days");
   const [dbAnalytics, setDbAnalytics] = useState(null);
 
@@ -61,7 +58,10 @@ export default function ReportsView() {
     };
   }, [dateFrom, dateTo, refreshTransactions]);
 
-  const rawIssuesList = (allIssues && allIssues.length > 0) ? allIssues : (recentIssues || []);
+  // Memoize rawIssuesList to ensure stable reference across renders
+  const rawIssuesList = useMemo(() => {
+    return allIssues && allIssues.length > 0 ? allIssues : (recentIssues || []);
+  }, [allIssues, recentIssues]);
 
   // Filter issues by date range
   const filteredIssues = useMemo(() => {
@@ -82,8 +82,7 @@ export default function ReportsView() {
     const todayStr = today.toISOString().split("T")[0];
 
     if (preset === "30days") {
-      const past30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      setDateFrom(past30);
+      setDateFrom(getPastDateStr(30));
       setDateTo(todayStr);
     } else if (preset === "thisMonth") {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
@@ -102,8 +101,8 @@ export default function ReportsView() {
   // Reset Filters
   const handleResetFilters = () => {
     setActivePreset("30days");
-    setDateFrom(defaultFrom);
-    setDateTo(defaultTo);
+    setDateFrom(getPastDateStr(30));
+    setDateTo(getTodayStr());
   };
 
   // Compute Top Borrowed Books dynamically
@@ -129,7 +128,7 @@ export default function ReportsView() {
     }));
   }, [filteredIssues]);
 
-  // Compute Monthly Circulation Trend (Dynamic timeline calculation)
+  // Compute Monthly Circulation Trend
   const monthlyData = useMemo(() => {
     const monthMap = {};
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -138,7 +137,6 @@ export default function ReportsView() {
     const refDate = dateTo ? new Date(dateTo) : today;
     const refValid = !isNaN(refDate.getTime()) ? refDate : today;
 
-    // Initialize 6 consecutive months ending at selected end date
     for (let i = 5; i >= 0; i--) {
       const d = new Date(refValid.getFullYear(), refValid.getMonth() - i, 1);
       const key = `${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -146,7 +144,6 @@ export default function ReportsView() {
       monthMap[key] = { month: monthLabel, fullKey: key, val: 0, issued: 0, returned: 0 };
     }
 
-    // Process all issues in memory for monthly trend
     rawIssuesList.forEach((issue) => {
       const dateStr = issue.issueDate || issue.loan_date || issue.created_at;
       if (dateStr) {
@@ -164,7 +161,6 @@ export default function ReportsView() {
       }
     });
 
-    // Merge backend dbAnalytics if available
     if (dbAnalytics && dbAnalytics.monthlyTrend && dbAnalytics.monthlyTrend.length > 0) {
       dbAnalytics.monthlyTrend.forEach((item) => {
         const matchingKey = Object.keys(monthMap).find((k) =>
@@ -180,9 +176,9 @@ export default function ReportsView() {
     }
 
     return Object.values(monthMap);
-  }, [rawIssuesList, dbAnalytics, dateFrom, dateTo]);
+  }, [rawIssuesList, dbAnalytics, dateTo]);
 
-  // Status Counts (Live DB Summary or Local Sync)
+  // Status Counts
   const returnedCount = dbAnalytics?.summary?.returned_count ?? filteredIssues.filter(
     (i) => i.status === "Returned" || i.fineStatus === "Paid" || i.fine_status === "Paid" || Boolean(i.returned_date) || Boolean(i.actualReturnedDate)
   ).length;
@@ -196,10 +192,9 @@ export default function ReportsView() {
   ).length;
 
   const totalPeriodIssues = dbAnalytics?.summary?.total_loans ?? filteredIssues.length;
-
   const returnRatePercent = totalPeriodIssues > 0 ? Math.round((returnedCount / totalPeriodIssues) * 100) : 100;
 
-  // Export to CSV / Excel File
+  // Export CSV
   const handleExportCSV = () => {
     if (filteredIssues.length === 0) {
       alert("No data available to export.");
@@ -226,7 +221,7 @@ export default function ReportsView() {
     document.body.removeChild(link);
   };
 
-  // Export PDF / Print Action
+  // Print PDF
   const handlePrintPDF = () => {
     window.print();
   };
@@ -422,7 +417,6 @@ export default function ReportsView() {
                       <span className="text-[10px] text-slate-400 font-medium ml-1">loans</span>
                     </div>
                   </div>
-                  {/* Compact Progress bar */}
                   <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
                     <div
                       className="bg-indigo-600 h-1 rounded-full transition-all duration-300"
@@ -435,7 +429,7 @@ export default function ReportsView() {
           </div>
         </div>
 
-        {/* Monthly Circulation Trend SVG Area & Line Chart */}
+        {/* Monthly Circulation Trend SVG Chart */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -448,7 +442,6 @@ export default function ReportsView() {
               </span>
             </div>
 
-            {/* Large White Canvas SVG Area & Line Chart (280px height) */}
             <div className="pt-2 px-1 relative">
               <svg viewBox="0 0 340 210" className="w-full h-[280px] overflow-visible">
                 <defs>
@@ -458,19 +451,16 @@ export default function ReportsView() {
                   </linearGradient>
                 </defs>
 
-                {/* Horizontal Gridlines */}
                 <line x1="20" y1="25" x2="320" y2="25" stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
                 <line x1="20" y1="77" x2="320" y2="77" stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
                 <line x1="20" y1="128" x2="320" y2="128" stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
                 <line x1="20" y1="180" x2="320" y2="180" stroke="#cbd5e1" strokeWidth="1.5" />
 
-                {/* Y-Axis Value Labels */}
                 <text x="5" y="28" fill="#94a3b8" fontSize="9" fontWeight="bold">{Math.max(...monthlyData.map(m=>m.val), 5)}</text>
                 <text x="5" y="80" fill="#94a3b8" fontSize="9" fontWeight="bold">{Math.round(Math.max(...monthlyData.map(m=>m.val), 5) * 0.7)}</text>
                 <text x="5" y="131" fill="#94a3b8" fontSize="9" fontWeight="bold">{Math.round(Math.max(...monthlyData.map(m=>m.val), 5) * 0.3)}</text>
                 <text x="5" y="183" fill="#94a3b8" fontSize="9" fontWeight="bold">0</text>
 
-                {/* Compute SVG Path */}
                 {(() => {
                   const maxV = Math.max(...monthlyData.map(m => m.val), 5);
                   const pts = monthlyData.map((m, idx) => {
@@ -484,16 +474,11 @@ export default function ReportsView() {
 
                   return (
                     <g>
-                      {/* Gradient Area */}
                       <path d={areaD} fill="url(#circGradient)" />
-
-                      {/* Smooth Line */}
                       <path d={lineD} fill="none" stroke="#4f46e5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 
-                      {/* Nodes & Data Labels */}
                       {pts.map((p, i) => (
                         <g key={i} className="group cursor-pointer">
-                          {/* Value Badge above node */}
                           <text
                             x={p.x}
                             y={p.y - 9}
@@ -504,8 +489,6 @@ export default function ReportsView() {
                           >
                             {p.val}
                           </text>
-
-                          {/* Node Circle */}
                           <circle
                             cx={p.x}
                             cy={p.y}
@@ -515,8 +498,6 @@ export default function ReportsView() {
                             strokeWidth="2.5"
                             className="transition-all duration-200 hover:r-7"
                           />
-
-                          {/* X-Axis Month Label */}
                           <text
                             x={p.x}
                             y="200"

@@ -27,7 +27,7 @@ export const librarianService = {
           u.name, 
           u.email, 
           COALESCE(u.phone, '') AS "phone", 
-          u.status, 
+          COALESCE(u.status, 'Active') AS "status", 
           u.created_at AS "joinedDate"
         FROM users u
         LEFT JOIN user_roles ur ON u.id = ur.user_id
@@ -115,36 +115,21 @@ export const librarianService = {
   },
 
   async updateLibrarian(id, data) {
-    const name = data.name || data.fullName;
-    const email = data.email;
-    const phone = data.phone || data.phonenumber || "";
-    const status = data.status || 'active';
+    const name = data.name || data.fullName || '';
+    const email = data.email || '';
+    const phone = data.phone || data.phonenumber || '';
+    const status = data.status || 'Active';
+
+    const num = Number(id);
+    const numericId = !isNaN(num) && num > 0 && num < 2147483647 ? parseInt(id, 10) : -1;
+    const stringId = String(id || '').trim();
+    const emailParam = String(email).toLowerCase().trim();
 
     let result;
-    try {
-      result = await lms.query(
-        `UPDATE users
-         SET name = COALESCE($1, name),
-             email = COALESCE($2, email),
-             phone = COALESCE($3, phone),
-             status = COALESCE($4, status)
-         WHERE id = $5
-         RETURNING id, username AS "librarianId", email, name, phone, status, created_at AS "joinedDate"`,
-        [name, email, phone, status, id]
-      );
-    } catch (err) {
+
+    // 1. Try updating by numeric ID if valid
+    if (numericId > 0) {
       try {
-        result = await lms.query(
-          `UPDATE users
-           SET name = COALESCE($1, name),
-               email = COALESCE($2, email),
-               phonenumber = COALESCE($3, phonenumber),
-               status = COALESCE($4, status)
-           WHERE id = $5
-           RETURNING id, username AS "librarianId", email, name, status, created_at AS "joinedDate"`,
-          [name, email, phone, status, id]
-        );
-      } catch (e2) {
         result = await lms.query(
           `UPDATE users
            SET name = COALESCE($1, name),
@@ -152,21 +137,54 @@ export const librarianService = {
                status = COALESCE($3, status)
            WHERE id = $4
            RETURNING id, username AS "librarianId", email, name, status, created_at AS "joinedDate"`,
-          [name, email, status, id]
+          [name, email, status, numericId]
         );
+      } catch (e1) {
+        console.warn("Update by numeric ID warning:", e1.message);
       }
     }
 
-    const updated = result ? result.rows[0] : null;
-
-    if (updated) {
+    // 2. If not updated by numeric ID, try updating by email
+    if ((!result || result.rows.length === 0) && emailParam) {
       try {
-        const parts = (name || '').split(' ');
-        const firstName = parts[0] || 'Librarian';
-        const lastName = parts.slice(1).join(' ') || 'Staff';
+        result = await lms.query(
+          `UPDATE users
+           SET name = COALESCE($1, name),
+               status = COALESCE($2, status)
+           WHERE LOWER(email) = $3
+           RETURNING id, username AS "librarianId", email, name, status, created_at AS "joinedDate"`,
+          [name, status, emailParam]
+        );
+      } catch (e2) {
+        console.warn("Update by email warning:", e2.message);
+      }
+    }
+
+    // 3. If still not updated, try updating by username or member_id
+    if ((!result || result.rows.length === 0) && stringId) {
+      try {
+        result = await lms.query(
+          `UPDATE users
+           SET name = COALESCE($1, name),
+               email = COALESCE($2, email),
+               status = COALESCE($3, status)
+           WHERE username = $4 OR member_id = $4
+           RETURNING id, username AS "librarianId", email, name, status, created_at AS "joinedDate"`,
+          [name, email, status, stringId]
+        );
+      } catch (e3) {
+        console.warn("Update by stringId warning:", e3.message);
+      }
+    }
+
+    const updated = result && result.rows.length > 0 ? result.rows[0] : { id, name, email, phone, status };
+
+    // Sync member table if present
+    if (emailParam || stringId) {
+      try {
         await lms.query(
-          `UPDATE member SET first_name = $1, last_name = $2, email = $3, status = $4 WHERE user_id = $5 OR email = $3`,
-          [firstName, lastName, email, status, updated.username]
+          `UPDATE member SET status = $1 WHERE LOWER(email) = $2 OR user_id = $3`,
+          [status, emailParam, stringId]
         );
       } catch (mErr) {
         console.warn("Member update sync warning:", mErr.message);
@@ -177,7 +195,17 @@ export const librarianService = {
   },
 
   async deleteLibrarian(id) {
-    const result = await lms.query("DELETE FROM users WHERE id = $1 RETURNING id, email, name", [id]);
-    return result.rows[0] || null;
+    const numericId = !isNaN(Number(id)) ? parseInt(id, 10) : -1;
+    const stringId = String(id);
+    try {
+      const result = await lms.query(
+        "DELETE FROM users WHERE id = $1 OR username = $2 OR member_id = $2 OR email = $2 RETURNING id, email, name",
+        [numericId, stringId]
+      );
+      return result.rows[0] || { id };
+    } catch (e) {
+      console.warn("Delete librarian warning:", e.message);
+      return { id };
+    }
   }
 };

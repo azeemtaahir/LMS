@@ -108,30 +108,43 @@ export const useLibrarianHook = () => {
     return created;
   };
 
-  const handleDeleteLibrarian = (id) => {
+  const handleDeleteLibrarian = async (id) => {
     if (window.confirm("Are you sure you want to remove this librarian?")) {
-      setLibrarians((prev) => prev.filter((l) => l.id !== id));
+      try {
+        await api.delete(`/librarians/${id}`);
+      } catch (err) {
+        console.warn("Librarian delete fallback:", err?.message);
+      }
+      setLibrarians((prev) => prev.filter((l) => l.id !== id && l.librarianId !== id));
     }
   };
 
   const handleUpdateLibrarian = async (id, updatedData) => {
-    try {
-      await api.put(`/librarians/${id}`, updatedData);
-    } catch (err) {
-      console.warn("Librarian update local fallback:", err?.message);
-    }
+    const targetId = id || updatedData.id || updatedData.librarianId;
+
+    // Update local state instantly
     setLibrarians((prev) =>
-      prev.map((l) => (l.id === id || l.librarianId === id ? { ...l, ...updatedData } : l))
+      prev.map((l) =>
+        l.id === targetId || l.librarianId === targetId || (updatedData.email && l.email?.toLowerCase() === updatedData.email.toLowerCase())
+          ? { ...l, ...updatedData }
+          : l
+      )
     );
 
     // Sync localStorage registered_users
     const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
     const updatedRegistered = registeredUsers.map((u) =>
-      (u.id === id || u.librarianId === id || u.user_id === id || u.email === updatedData.email)
+      u.id === targetId || u.librarianId === targetId || u.user_id === targetId || (updatedData.email && u.email?.toLowerCase() === updatedData.email.toLowerCase())
         ? { ...u, ...updatedData }
         : u
     );
     localStorage.setItem("registered_users", JSON.stringify(updatedRegistered));
+
+    try {
+      await api.put(`/librarians/${targetId}`, updatedData);
+    } catch (err) {
+      console.warn("Librarian update API warning:", err?.message);
+    }
   };
 
   const filteredLibrarians = librarians.filter((l) => {

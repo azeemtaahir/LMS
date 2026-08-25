@@ -92,9 +92,9 @@ export const useAuthHook = () => {
 
           if (foundRegistered) {
             const regStatusLower = foundRegistered.status ? String(foundRegistered.status).toLowerCase() : "active";
-            if (regStatusLower === "suspended" || regStatusLower === "inactive" || regStatusLower === "disabled") {
-              const statusErr = new Error(`Your account status is ${foundRegistered.status}. Access denied.`);
-              statusErr.response = { data: { message: `Your account status is ${foundRegistered.status}. Access denied.` } };
+            if (regStatusLower !== "active") {
+              const statusErr = new Error(`Your account status is "${foundRegistered.status || "Inactive"}". Access denied. Please contact administrator.`);
+              statusErr.response = { data: { message: `Your account status is "${foundRegistered.status || "Inactive"}". Access denied. Please contact administrator.` } };
               throw statusErr;
             }
             data = {
@@ -122,9 +122,9 @@ export const useAuthHook = () => {
       }
 
       const userStatusLower = userObj.status ? String(userObj.status).toLowerCase() : "active";
-      if (userStatusLower === "suspended" || userStatusLower === "inactive" || userStatusLower === "disabled") {
-        const statusErr = new Error(`Your account status is ${userObj.status}. Access denied.`);
-        statusErr.response = { data: { message: `Your account status is ${userObj.status}. Access denied.` } };
+      if (userStatusLower !== "active") {
+        const statusErr = new Error(`Your account status is "${userObj.status || "Inactive"}". Access denied. Please contact administrator.`);
+        statusErr.response = { data: { message: `Your account status is "${userObj.status || "Inactive"}". Access denied. Please contact administrator.` } };
         throw statusErr;
       }
 
