@@ -167,4 +167,49 @@ export class FineModel {
 
     return result.rows[0];
   }
+
+  static async updateFineAmount({ id, loan_id, fine_amount }) {
+    const amount = Number(fine_amount);
+    if (isNaN(amount) || amount < 0) {
+      const err = new Error('Invalid fine amount');
+      err.status = 400;
+      throw err;
+    }
+
+    const targetLoanId = loan_id || id;
+    const targetFineId = id && !isNaN(Number(id)) ? Number(id) : null;
+
+    // Check if fine row exists
+    let existing = null;
+    if (targetFineId) {
+      const fRes = await lms.query('SELECT * FROM fine WHERE id = $1', [targetFineId]);
+      if (fRes.rows.length > 0) existing = fRes.rows[0];
+    }
+    if (!existing && targetLoanId) {
+      const lRes = await lms.query('SELECT * FROM fine WHERE loan_id = $1 ORDER BY id DESC LIMIT 1', [targetLoanId]);
+      if (lRes.rows.length > 0) existing = lRes.rows[0];
+    }
+
+    if (existing) {
+      const result = await lms.query(
+        'UPDATE fine SET fine_amount = $1 WHERE id = $2 RETURNING *',
+        [amount, existing.id]
+      );
+      return result.rows[0];
+    } else {
+      let memberId = 1;
+      if (targetLoanId) {
+        const lRes = await lms.query('SELECT member_id FROM loan WHERE id = $1', [targetLoanId]);
+        if (lRes.rows.length > 0 && lRes.rows[0].member_id) {
+          memberId = lRes.rows[0].member_id;
+        }
+      }
+      const result = await lms.query(
+        "INSERT INTO fine (member_id, loan_id, fine_date, fine_amount, status) VALUES ($1, $2, CURRENT_DATE, $3, 'Unpaid') RETURNING *",
+        [memberId, targetLoanId, amount]
+      );
+      return result.rows[0];
+    }
+  }
 }
+

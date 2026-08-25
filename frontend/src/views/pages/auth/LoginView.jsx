@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
+import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles, ArrowLeft, BookOpen, Loader2 } from "lucide-react";
 import { useAuthController } from "../../../hooks/useAuthHook";
 import libraryBg from "../../../assets/images/library_bg.png";
 
@@ -16,57 +16,72 @@ export default function LoginView() {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] overflow-hidden select-none font-sans">
-      {/* Background Image & Overlay */}
+    <div className="min-h-screen w-full font-sans relative flex flex-col justify-center items-center bg-slate-950 p-4 overflow-hidden select-none">
+      {/* Background Image & Light Dark Blurred Overlay */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat pointer-events-none scale-105"
         style={{ backgroundImage: `url(${libraryBg})` }}
       >
-        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/20 to-slate-950/75" />
       </div>
 
-      {/* Foreground Container */}
-      <div className="relative z-10 w-full h-full overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-        {/* Glassmorphism Login Card */}
-        <div className="my-auto w-full max-w-md p-6 sm:p-8 md:p-10 rounded-3xl bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 shadow-2xl text-white shrink-0">
-          <Link
-            to="/public-dashboard"
-            className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold mb-6 transition-colors"
-          >
-            <ArrowLeft size={14} /> Back to Catalog Dashboard
-          </Link>
+      {/* Main Compact Centered Glassmorphism Card */}
+      <div className="relative z-10 w-full max-w-sm bg-slate-900/90 backdrop-blur-xl border border-slate-700/70 shadow-2xl shadow-slate-950 rounded-2xl overflow-hidden transition-all duration-300">
 
-          {/* Brand Logo & Header */}
-          <div className="flex flex-col items-center text-center mb-6 sm:mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-indigo-500/30 mb-3">
-              L
+        {/* Top Accent Line */}
+        <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500" />
+
+        <div className="p-5 sm:p-6">
+          {/* Inner Form Top Header: Catalog Link & LMS Portal Badge */}
+          <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-800/80">
+            <Link
+              to="/public-dashboard"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors group"
+            >
+              <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+              <span>Catalog</span>
+            </Link>
+
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-0.5 rounded-full">
+              <Sparkles size={11} className="text-amber-400 fill-amber-400" /> LMS Portal
+            </span>
+          </div>
+
+          {/* Header & Logo */}
+          <div className="text-center mb-5">
+            <div className="mx-auto w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 mb-2.5 ring-2 ring-indigo-500/20">
+              <BookOpen size={20} className="text-white" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              LMS Portal <Sparkles size={16} className="text-amber-400 fill-amber-400" />
+
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Welcome Back
             </h1>
-            <p className="text-xs text-slate-300 mt-1">Enter your credentials to access the library dashboard</p>
+            <p className="text-xs text-slate-400 mt-1 font-normal">
+              Sign in to access your library account
+            </p>
           </div>
 
           {/* Server Error Alert */}
           {serverError && (
             <div
               role="alert"
-              className="mb-4 sm:mb-6 p-3 bg-rose-500/20 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-semibold flex items-center gap-2"
+              className="mb-4 p-2.5 bg-rose-500/20 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-semibold flex items-center gap-2"
             >
-              <span aria-hidden="true">⚠️</span>
-              <span>{serverError}</span>
+              <span className="shrink-0 text-sm">⚠️</span>
+              <span className="leading-tight">{serverError}</span>
             </div>
           )}
 
           {/* Login Form */}
-          <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
+          <form onSubmit={onSubmit} className="space-y-3.5">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-xs font-bold text-slate-300 mb-1.5">
+              <label htmlFor="email" className="block text-xs font-medium text-slate-300 mb-1">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                 <input
                   id="email"
                   type="email"
@@ -74,20 +89,20 @@ export default function LoginView() {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="abc@gmail.com"
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  placeholder="abc@library.com"
+                  className="w-full pl-9 pr-3.5 py-2 bg-slate-800/80 border border-slate-700/80 rounded-lg text-white placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
-              {errors.email && <p className="text-rose-400 text-xs font-medium mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-rose-400 text-xs mt-1 pl-0.5">{errors.email}</p>}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-xs font-bold text-slate-300 mb-1.5">
+              <label htmlFor="password" className="block text-xs font-medium text-slate-300 mb-1">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -96,30 +111,46 @@ export default function LoginView() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-9 pr-10 py-2 bg-slate-800/80 border border-slate-700/80 rounded-lg text-white placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 rounded focus:outline-none"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              {errors.password && <p className="text-rose-400 text-xs font-medium mt-1">{errors.password}</p>}
+              {errors.password && <p className="text-rose-400 text-xs mt-1 pl-0.5">{errors.password}</p>}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-6 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all duration-200 active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2 mt-4 sm:mt-6 cursor-pointer disabled:cursor-not-allowed"
+              className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all duration-200 active:scale-[0.99] disabled:opacity-75 flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:cursor-not-allowed"
             >
-              <LogIn size={18} />
-              <span>{loading ? "Logging in..." : "Log in"}</span>
+              {loading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn size={15} />
+                  <span>Sign In</span>
+                </>
+              )}
             </button>
           </form>
+        </div>
+
+        {/* Compact Card Footer */}
+        <div className="bg-slate-950/60 px-5 py-2.5 border-t border-slate-800/70 text-center">
+          <p className="text-[10px] text-slate-400 font-medium">
+            Library Management System Portal
+          </p>
         </div>
       </div>
     </div>

@@ -26,3 +26,15 @@ export const payFine = async (req, res) => {
     res.status(error.status || 500).json({ message: error.message || 'Error processing payment' });
   }
 };
+
+export const updateFine = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fine_amount, loan_id } = req.body;
+    const updated = await fineService.updateFine({ id, loan_id, fine_amount });
+    res.status(200).json({ message: 'Fine updated successfully', fine: updated });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Error updating fine' });
+  }
+};
+

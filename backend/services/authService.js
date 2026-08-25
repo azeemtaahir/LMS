@@ -52,7 +52,7 @@ export const authService = {
 
     if (emailLower === 'admin@gmail.com') {
       if (password !== 'admin@786') {
-        const err = new Error('Invalid email or password');
+        const err = new Error('Invalid password');
         err.status = 401;
         throw err;
       }
@@ -91,7 +91,7 @@ export const authService = {
     }
 
     if (!result || result.rows.length === 0) {
-      const err = new Error('Invalid email or password');
+      const err = new Error('Invalid email');
       err.status = 401;
       throw err;
     }
@@ -99,7 +99,7 @@ export const authService = {
     const user = result.rows[0];
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      const err = new Error('Invalid email or password');
+      const err = new Error('Invalid password');
       err.status = 401;
       throw err;
     }

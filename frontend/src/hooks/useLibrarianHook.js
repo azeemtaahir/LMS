@@ -89,6 +89,20 @@ export const useLibrarianHook = () => {
       joinedDate: new Date().toISOString().split("T")[0],
     };
 
+    // Check if librarian with same Email or ID already exists
+    const isDuplicate = librarians.some((l) => {
+      const lEmail = String(l.email || "").toLowerCase().trim();
+      const inputEmail = String(email || "").toLowerCase().trim();
+      const lId = String(l.id || l.librarianId || l.user_id || "").toLowerCase().trim();
+      const inputId = String(librarianId || "").toLowerCase().trim();
+      return (inputEmail && lEmail === inputEmail) || (inputId && lId === inputId);
+    });
+
+    if (isDuplicate) {
+      alert("⚠️ User is already generated / registered with this email or Librarian ID!");
+      return null;
+    }
+
     let created;
     try {
       const response = await api.post("/librarians", librarianData);

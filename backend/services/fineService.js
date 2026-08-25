@@ -11,5 +11,10 @@ export const fineService = {
 
   async payFine(data) {
     return await FineModel.payFine(data);
+  },
+
+  async updateFine(data) {
+    return await FineModel.updateFineAmount(data);
   }
 };
+

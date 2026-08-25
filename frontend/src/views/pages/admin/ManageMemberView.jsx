@@ -1,8 +1,42 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMemberController } from "../../../hooks/useMemberHook";
-import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from "lucide-react";
 import RegisterUsersView from "./RegisterMemberView";
+
+export const getMemberOverdueLoans = (member, loans = []) => {
+  if (!member || !loans || !Array.isArray(loans)) return [];
+  const uId = String(member.id || "");
+  const uDbId = String(member.db_id || member.member_id || "");
+  const uStudentId = String(member.studentId || member.user_id || "");
+  const uName = String(member.name || `${member.first_name || ""} ${member.last_name || ""}`).toLowerCase().trim();
+  const uEmail = String(member.email || "").toLowerCase().trim();
+
+  return loans.filter((item) => {
+    const isReturned = item.status === "Returned" || Boolean(item.returned_date || item.actualReturnedDate);
+    const isPaid = item.fineStatus === "Paid" || item.fine_status === "Paid";
+    if (isReturned || isPaid) return false;
+
+    const mMemberId = String(item.member_id || item.user_id || "");
+    const mStudentId = String(item.studentId || "");
+    const mName = String(item.studentName || item.memberName || "").toLowerCase().trim();
+    const mEmail = String(item.email || "").toLowerCase().trim();
+
+    const isUserLoan =
+      (uId && mMemberId === uId) ||
+      (uDbId && mMemberId === uDbId) ||
+      (uStudentId && (mStudentId === uStudentId || mMemberId === uStudentId)) ||
+      (uName && mName && (mName.includes(uName) || uName.includes(mName))) ||
+      (uEmail && (mEmail === uEmail || (mName && mName.includes(uEmail))));
+
+    if (!isUserLoan) return false;
+
+    const dueDateStr = item.dueDate || item.due_date || item.returnDate;
+    const isPastDue = dueDateStr ? new Date(dueDateStr) < new Date() : false;
+
+    return item.status === "Overdue" || isPastDue;
+  });
+};
 
 export default function ManageUsersView() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +46,7 @@ export default function ManageUsersView() {
 
   const {
     students,
+    recentIssues,
     searchQuery,
     setSearchQuery,
     selectedDept,
@@ -54,8 +89,14 @@ export default function ManageUsersView() {
 
     const matchesDept = !selectedDept || selectedDept === "All" || s.department === selectedDept;
     const matchesRole = !selectedRole || selectedRole === "All" || s.role === selectedRole;
-    const matchesStatus =
-      statusFilter === "All" || (s.status || "active").toLowerCase() === statusFilter.toLowerCase();
+    
+    const overdueLoans = getMemberOverdueLoans(s, recentIssues);
+    let matchesStatus = true;
+    if (statusFilter === "Overdue") {
+      matchesStatus = overdueLoans.length > 0;
+    } else if (statusFilter !== "All") {
+      matchesStatus = (s.status || "active").toLowerCase() === statusFilter.toLowerCase();
+    }
 
     return matchesSearch && matchesDept && matchesRole && matchesStatus;
   });
@@ -146,67 +187,85 @@ export default function ManageUsersView() {
                     <th className="py-3.5 px-4">Email</th>
                     <th className="py-3.5 px-4">Role</th>
                     <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Overdue Books</th>
                     <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {currentStudents.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="py-8 text-center text-slate-400">
+                      <td colSpan="7" className="py-8 text-center text-slate-400">
                         No users found matching your criteria.
                       </td>
                     </tr>
                   ) : (
-                    currentStudents.map((s) => (
-                      <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 font-bold text-slate-900">{s.studentId || `MEM-${s.id}`}</td>
-                        <td className="py-3 px-4 font-semibold text-slate-800">{s.name}</td>
-                        <td className="py-3 px-4 text-slate-600">{s.email}</td>
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            {s.role || "Student"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                              (s.status || "active").toLowerCase() === "active"
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                : (s.status || "active").toLowerCase() === "suspended"
-                                ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                : "bg-slate-100 text-slate-600 border border-slate-200"
-                            }`}
-                          >
-                            {s.status || "Active"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => setViewMember(s)}
-                              title="View Details"
-                              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                    currentStudents.map((s) => {
+                      const memberOverdue = getMemberOverdueLoans(s, recentIssues);
+                      const overdueCount = memberOverdue.length;
+
+                      return (
+                        <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 font-bold text-slate-900">{s.studentId || `MEM-${s.id}`}</td>
+                          <td className="py-3 px-4 font-semibold text-slate-800">{s.name}</td>
+                          <td className="py-3 px-4 text-slate-600">{s.email}</td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              {s.role || "Student"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                (s.status || "active").toLowerCase() === "active"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  : (s.status || "active").toLowerCase() === "suspended"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : "bg-slate-100 text-slate-600 border border-slate-200"
+                              }`}
                             >
-                              <Eye size={15} />
-                            </button>
-                            <button
-                              onClick={() => handleOpenEdit(s)}
-                              title="Edit User"
-                              className="p-1.5 text-indigo-600 hover:text-indigo-900 rounded-md hover:bg-indigo-50 transition cursor-pointer"
-                            >
-                              <Edit size={15} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteStudent(s.id)}
-                              title="Delete User"
-                              className="p-1.5 text-rose-600 hover:text-rose-800 rounded-md hover:bg-rose-50 transition cursor-pointer"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              {s.status || "Active"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {overdueCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 shadow-xs">
+                                <AlertTriangle size={12} className="text-rose-600 shrink-0" />
+                                {overdueCount} Overdue
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                0 Overdue
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => setViewMember(s)}
+                                title="View Details"
+                                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                              >
+                                <Eye size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleOpenEdit(s)}
+                                title="Edit User"
+                                className="p-1.5 text-indigo-600 hover:text-indigo-900 rounded-md hover:bg-indigo-50 transition cursor-pointer"
+                              >
+                                <Edit size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStudent(s.id)}
+                                title="Delete User"
+                                className="p-1.5 text-rose-600 hover:text-rose-800 rounded-md hover:bg-rose-50 transition cursor-pointer"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -253,55 +312,108 @@ export default function ManageUsersView() {
           </div>
 
           {/* VIEW DETAILS MODAL */}
-          {viewMember && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <h3 className="font-bold text-slate-800 text-base">User Details</h3>
-                  <button
-                    onClick={() => setViewMember(null)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="font-semibold text-slate-500 block">User ID:</span>
-                    <span className="font-bold text-slate-800 text-sm">{viewMember.studentId || `MEM-${viewMember.id}`}</span>
+          {viewMember && (() => {
+            const overdueLoans = getMemberOverdueLoans(viewMember, recentIssues);
+            return (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-800 text-base">User Details</h3>
+                      {overdueLoans.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
+                          <AlertTriangle size={12} /> {overdueLoans.length} Overdue
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setViewMember(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
-                  <div>
-                    <span className="font-semibold text-slate-500 block">Full Name:</span>
-                    <span className="text-slate-800 font-medium">{viewMember.name}</span>
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <span className="font-semibold text-slate-500 block">User ID:</span>
+                      <span className="font-bold text-slate-800 text-sm">{viewMember.studentId || `MEM-${viewMember.id}`}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-500 block">Full Name:</span>
+                      <span className="text-slate-800 font-medium">{viewMember.name}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-500 block">Email Address:</span>
+                      <span className="text-slate-800 font-medium">{viewMember.email}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-500 block">Role:</span>
+                      <span className="text-indigo-600 font-bold">{viewMember.role || "Student"}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-500 block">Account Status:</span>
+                      <span className="capitalize font-bold text-slate-800">{viewMember.status || "active"}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-500 block">Joined Date:</span>
+                      <span className="text-slate-700">{viewMember.registeredDate || "N/A"}</span>
+                    </div>
+
+                    {/* OVERDUE BOOKS STATUS SECTION */}
+                    <div className="pt-3 border-t border-slate-100 space-y-2">
+                      <span className="font-bold text-slate-800 text-xs block">Overdue Books Status</span>
+                      {overdueLoans.length > 0 ? (
+                        <div className="bg-rose-50/80 border border-rose-200 rounded-xl p-3 space-y-2">
+                          <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs">
+                            <AlertTriangle size={15} className="text-rose-600 shrink-0" />
+                            <span>This member has {overdueLoans.length} unreturned overdue book(s):</span>
+                          </div>
+                          <div className="divide-y divide-rose-200/60 text-[11px]">
+                            {overdueLoans.map((item, idx) => {
+                              const dueDateStr = item.dueDate || item.due_date || item.returnDate;
+                              const due = dueDateStr ? new Date(dueDateStr) : new Date();
+                              const diffDays = Math.max(1, Math.ceil((new Date() - due) / (1000 * 3600 * 24)));
+                              const weeks = Math.ceil(diffDays / 7);
+                              const fine = weeks * 500;
+                              return (
+                                <div key={item.id || idx} className="py-2 first:pt-0 last:pb-0 flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-bold text-slate-900">{item.bookTitle || item.title || "Borrowed Book"}</p>
+                                    <p className="text-[10px] text-slate-600">Issued: {item.issueDate || item.loan_date || "N/A"} • Due: <strong className="text-rose-700">{dueDateStr || "N/A"}</strong></p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <span className="px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-bold text-[10px] block">
+                                      {diffDays} days late
+                                    </span>
+                                    <span className="text-[10px] font-bold text-rose-900 block mt-0.5">
+                                      Fine: {fine} PKR
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                          <span>No overdue books for this member.</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-semibold text-slate-500 block">Email Address:</span>
-                    <span className="text-slate-800 font-medium">{viewMember.email}</span>
+                  <div className="pt-3 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={() => setViewMember(null)}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer"
+                    >
+                      Close
+                    </button>
                   </div>
-                  <div>
-                    <span className="font-semibold text-slate-500 block">Role:</span>
-                    <span className="text-indigo-600 font-bold">{viewMember.role || "Student"}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-500 block">Account Status:</span>
-                    <span className="capitalize font-bold text-slate-800">{viewMember.status || "active"}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-500 block">Joined Date:</span>
-                    <span className="text-slate-700">{viewMember.registeredDate || "N/A"}</span>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-slate-100 flex justify-end">
-                  <button
-                    onClick={() => setViewMember(null)}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer"
-                  >
-                    Close
-                  </button>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* EDIT USER MODAL */}
           {editMember && (

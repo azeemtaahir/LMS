@@ -34,23 +34,24 @@ export default function MemberDashboardView() {
     const uName = String(user.name || `${user.first_name || ""} ${user.last_name || ""}`).toLowerCase().trim();
     const uEmail = String(user.email || "").toLowerCase().trim();
 
-    const mMemberId = String(item.member_id || "");
+    const mMemberId = String(item.member_id || item.user_id || "");
     const mStudentId = String(item.studentId || "");
-    const mName = String(item.studentName || "").toLowerCase().trim();
+    const mName = String(item.studentName || item.memberName || "").toLowerCase().trim();
+    const mEmail = String(item.email || "").toLowerCase().trim();
 
     const matchesSpecificUser = (
       (uId && mMemberId === uId) ||
       (uDbId && mMemberId === uDbId) ||
       (uStudentId && (mStudentId === uStudentId || mMemberId === uStudentId)) ||
       (uName && mName && (mName.includes(uName) || uName.includes(mName))) ||
-      (uEmail && mName && mName.includes(uEmail))
+      (uEmail && (mEmail === uEmail || (mName && mName.includes(uEmail))))
     );
 
     return matchesSpecificUser;
   });
 
-  // If specific filter found items, use them; otherwise if user has loans in allIssues, show them
-  const activeLoansList = (memberLoans.length > 0 ? memberLoans : (allIssues || [])).filter(
+  // Strictly filter only the logged-in member's active loans
+  const activeLoansList = memberLoans.filter(
     (b) => b.status === "Issued" || b.status === "Overdue"
   );
 

@@ -1,22 +1,33 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
+import { useAuth } from "../../../context/AuthContext";
 import {
   Eye,
   ChevronLeft,
   ChevronRight,
   DollarSign,
   CheckCircle,
+  Pencil,
+  X,
 } from "lucide-react";
 
 export default function ReturnBookView() {
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin" || !user?.role || user?.email?.toLowerCase().includes("admin");
 
   const {
     allIssues,
     handleReturnLoanDirect,
     handlePayFine,
+    handleUpdateFineAmount,
   } = useTransactionController();
+
+  const [editFineModalOpen, setEditFineModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [newFineAmount, setNewFineAmount] = useState("");
+  const [updatingFine, setUpdatingFine] = useState(false);
 
   const isRecordsView = searchParams.get("records") === "true";
 
@@ -304,6 +315,20 @@ export default function ReturnBookView() {
                             </span>
                           )}
 
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                setEditingItem(item);
+                                setNewFineAmount(String(finePkr));
+                                setEditFineModalOpen(true);
+                              }}
+                              title="Edit Fine Amount"
+                              className="p-1 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition cursor-pointer"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          )}
+
                           <button
                             onClick={() =>
                               handleReturnLoanDirect(item)
@@ -403,6 +428,99 @@ export default function ReturnBookView() {
 
         </div>
       </div>
+
+      {/* Edit Fine Modal for Admin */}
+      {editFineModalOpen && editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden text-left">
+            {/* Header */}
+            <div className="bg-[#181C3b] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-indigo-400" />
+                <h3 className="font-bold text-sm tracking-wide">Edit Fine Amount</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setEditFineModalOpen(false);
+                  setEditingItem(null);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4 text-xs font-semibold">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                <div className="flex justify-between text-slate-600">
+                  <span>Borrower:</span>
+                  <span className="font-bold text-slate-900">
+                    {editingItem.studentName || editingItem.borrowerName || "Borrower"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Book Title:</span>
+                  <span className="font-bold text-slate-900 truncate max-w-[200px]">
+                    {editingItem.bookTitle || "Book"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Current Fine:</span>
+                  <span className="font-extrabold text-rose-600">
+                    {editingItem.fineAmount || 0} PKR
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  New Fine Amount (PKR)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={newFineAmount}
+                  onChange={(e) => setNewFineAmount(e.target.value)}
+                  placeholder="Enter fine amount in PKR"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-bold text-slate-900 outline-none transition"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-slate-50 border-t border-slate-100 px-6 py-3.5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditFineModalOpen(false);
+                  setEditingItem(null);
+                }}
+                className="px-4 py-2 rounded-xl text-slate-600 border border-slate-200 hover:bg-slate-100 font-bold transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={updatingFine}
+                onClick={async () => {
+                  setUpdatingFine(true);
+                  const success = await handleUpdateFineAmount(editingItem, newFineAmount);
+                  setUpdatingFine(false);
+                  if (success) {
+                    setEditFineModalOpen(false);
+                    setEditingItem(null);
+                  }
+                }}
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {updatingFine ? "Saving..." : "Save Fine"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

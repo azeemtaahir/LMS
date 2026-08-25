@@ -2,72 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../api/api";
 
-const MOCK_BOOKS = [
-  {
-    id: 1,
-    title: "Clean Code: A Handbook of Agile Software Craftsmanship",
-    author: "Robert C. Martin",
-    isbn: "978-0132350884",
-    category: "Computer Science",
-    totalQuantity: 5,
-    copies_owned: 5,
-    availableCopies: 4,
-    status: "Available",
-    publisher: "Prentice Hall",
-    edition: "1st Edition",
-    shelfNumber: "CS-A1",
-  },
-  {
-    id: 2,
-    title: "The Selfish Gene",
-    author: "Richard Dawkins",
-    isbn: "978-0199291151",
-    category: "Science & Technology",
-    totalQuantity: 3,
-    copies_owned: 3,
-    availableCopies: 2,
-    status: "Available",
-    publisher: "Oxford University Press",
-    edition: "3rd Edition",
-    shelfNumber: "SCI-B2",
-  },
-  {
-    id: 3,
-    title: "The C++ Programming Language",
-    author: "Bjarne Stroustrup",
-    isbn: "978-0321563842",
-    category: "Computer Science",
-    totalQuantity: 4,
-    copies_owned: 4,
-    availableCopies: 3,
-    status: "Available",
-    publisher: "Addison-Wesley",
-    edition: "4th Edition",
-    shelfNumber: "CS-C3",
-  },
-  {
-    id: 4,
-    title: "Refactoring: Improving the Design of Existing Code",
-    author: "Martin Fowler",
-    isbn: "978-0134757599",
-    category: "Computer Science",
-    totalQuantity: 2,
-    copies_owned: 2,
-    availableCopies: 1,
-    status: "Available",
-    publisher: "Addison-Wesley",
-    edition: "2nd Edition",
-    shelfNumber: "CS-A2",
-  },
-];
-
-const MOCK_CATEGORIES = [
-  { id: 1, name: "Fiction", bookCount: 12, status: "Active" },
-  { id: 2, name: "Computer Science", bookCount: 18, status: "Active" },
-  { id: 3, name: "Science & Technology", bookCount: 9, status: "Active" },
-  { id: 4, name: "Finance", bookCount: 7, status: "Active" },
-];
-
 const validateBookInput = (data) => {
   const errors = {};
   if (!data.title || !data.title.trim()) {
@@ -92,13 +26,9 @@ export const useBookHook = () => {
   const [searchParams] = useSearchParams();
   const [books, setBooks] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
-  const [authors] = useState([
-    "Bjarne Stroustrup",
-    "Richard Dawkins",
-    "Robert C. Martin",
-    "Martin Fowler",
-    "Donald Knuth",
-  ]);
+  const authors = Array.from(
+    new Set(books.map((b) => b.author || b.author_name).filter(Boolean))
+  );
   const [loading, setLoading] = useState(false);
   const searchParamQuery = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(searchParamQuery);
@@ -144,19 +74,20 @@ export const useBookHook = () => {
       ]);
 
       const booksData =
-        res.status === "fulfilled" && Array.isArray(res.value?.data) && res.value.data.length > 0
+        res.status === "fulfilled" && Array.isArray(res.value?.data)
           ? res.value.data
-          : MOCK_BOOKS;
+          : [];
       const catsData =
-        catRes.status === "fulfilled" && Array.isArray(catRes.value?.data) && catRes.value.data.length > 0
+        catRes.status === "fulfilled" && Array.isArray(catRes.value?.data)
           ? catRes.value.data
-          : MOCK_CATEGORIES;
+          : [];
 
       setBooks(booksData);
       setCategoriesList(catsData);
     } catch (err) {
       console.error("Error fetching books from database:", err);
-      setBooks(MOCK_BOOKS);
+      setBooks([]);
+      setCategoriesList([]);
     } finally {
       setLoading(false);
     }
@@ -175,19 +106,22 @@ export const useBookHook = () => {
         if (ignore) return;
 
         const booksData =
-          res.status === "fulfilled" && Array.isArray(res.value?.data) && res.value.data.length > 0
+          res.status === "fulfilled" && Array.isArray(res.value?.data)
             ? res.value.data
-            : MOCK_BOOKS;
+            : [];
         const catsData =
-          catRes.status === "fulfilled" && Array.isArray(catRes.value?.data) && catRes.value.data.length > 0
+          catRes.status === "fulfilled" && Array.isArray(catRes.value?.data)
             ? catRes.value.data
-            : MOCK_CATEGORIES;
+            : [];
 
         setBooks(booksData);
         setCategoriesList(catsData);
       } catch (err) {
         console.error("Error fetching books from database:", err);
-        if (!ignore) setBooks(MOCK_BOOKS);
+        if (!ignore) {
+          setBooks([]);
+          setCategoriesList([]);
+        }
       } finally {
         if (!ignore) setLoading(false);
       }

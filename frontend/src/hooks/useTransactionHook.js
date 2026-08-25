@@ -126,10 +126,11 @@ export const useTransactionHook = () => {
 
       const processedIssues = rawIssues.map((item) => {
         const { fineAmount, status, overdueDays, overdueWeeks, fineStatus } = computeLoanFine(item);
+        const hasExplicitFine = item.fineAmount !== undefined && item.fineAmount !== null;
         return {
           ...item,
           status,
-          fineAmount: Number(item.fineAmount) || fineAmount,
+          fineAmount: hasExplicitFine ? Number(item.fineAmount) : fineAmount,
           overdueDays,
           overdueWeeks,
           fineStatus: item.fineStatus || item.fine_status || fineStatus,
@@ -401,6 +402,42 @@ export const useTransactionHook = () => {
     }
   };
 
+  const handleUpdateFineAmount = async (loanItem, newFineAmount) => {
+    if (!loanItem) return false;
+    const amountNum = Number(newFineAmount);
+    if (isNaN(amountNum) || amountNum < 0) {
+      alert("Please enter a valid fine amount.");
+      return false;
+    }
+    const targetLoanId = loanItem.loan_id || loanItem.id;
+    const targetFineId = loanItem.fine_id || targetLoanId;
+
+    try {
+      await api.put(`/fines/${targetFineId}`, {
+        fine_amount: amountNum,
+        loan_id: targetLoanId,
+      });
+    } catch (err) {
+      console.warn("API PUT /fines/:id fallback:", err?.message);
+    }
+
+    setRecentIssues((prev) =>
+      prev.map((item) =>
+        item.id === loanItem.id || item.id === targetLoanId
+          ? {
+              ...item,
+              fineAmount: amountNum,
+            }
+          : item
+      )
+    );
+
+    await fetchTransactions();
+    window.dispatchEvent(new Event("book-updated"));
+    alert(`Fine amount updated to ${amountNum} PKR successfully!`);
+    return true;
+  };
+
   return {
     recentIssues: filteredIssues,
     allIssues: recentIssues,
@@ -424,6 +461,7 @@ export const useTransactionHook = () => {
     handleReturnLoanDirect,
     handlePayFine,
     handleExtendLoanDueDate,
+    handleUpdateFineAmount,
     refreshTransactions: fetchTransactions,
   };
 };

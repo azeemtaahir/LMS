@@ -177,9 +177,9 @@ export default function ManageBooksView() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 select-none">
+    <div className="max-w-7xl mx-auto space-y-3 pb-6 select-none">
       {showAddForm ? (
-        <div className="bg-amber-50/20 p-4 sm:p-6 rounded-2xl border border-amber-900/10 transition-all duration-300">
+        <div className="bg-indigo-50/30 p-2 sm:p-3 rounded-2xl border border-indigo-900/10 transition-all duration-300">
           <AddBookView onCancel={handleCloseAddForm} onSuccess={handleCloseAddForm} />
         </div>
       ) : (

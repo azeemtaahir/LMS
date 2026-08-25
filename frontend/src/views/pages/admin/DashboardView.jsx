@@ -290,29 +290,42 @@ export default function DashboardView() {
             </div>
 
             <div className="p-4 space-y-2.5">
-              {(recentLogins || []).slice(0, 4).map((st) => (
-                <div
-                  key={st.id || st.email}
-                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white font-bold text-xs flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
-                      {st.name ? st.name[0] : "U"}
-                    </div>
+              {(() => {
+                const userList = (recentLogins && recentLogins.length > 0) ? recentLogins : (students || []);
+                const itemsToDisplay = userList.slice(0, 4);
 
-                    <div className="truncate">
-                      <div className="text-xs font-bold text-slate-800 truncate">
-                        {st.name}
+                if (itemsToDisplay.length === 0) {
+                  return (
+                    <div className="py-6 text-center text-slate-400 text-xs font-medium">
+                      No recent users found.
+                    </div>
+                  );
+                }
+
+                return itemsToDisplay.map((st) => (
+                  <div
+                    key={st.id || st.studentId || st.email || st.user_id}
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white font-bold text-xs flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+                        {st.name ? st.name[0].toUpperCase() : (st.first_name ? st.first_name[0].toUpperCase() : "U")}
                       </div>
 
-                      <div className="text-[10px] text-slate-500 truncate">
-                        {st.role ? `${st.role} • ` : ""}
-                        {st.email}
+                      <div className="truncate">
+                        <div className="text-xs font-bold text-slate-800 truncate">
+                          {st.name || `${st.first_name || ""} ${st.last_name || ""}`.trim() || "User"}
+                        </div>
+
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {st.role ? `${st.role} • ` : ""}
+                          {st.email || st.studentId || st.user_id}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         </div>

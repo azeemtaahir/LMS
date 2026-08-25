@@ -51,7 +51,7 @@ export class LoanModel {
         TO_CHAR(COALESCE(l.due_date, (l.loan_date + 14)::date), 'YYYY-MM-DD') AS "returnDate",
         TO_CHAR(l.returned_date, 'YYYY-MM-DD') AS "actualReturnedDate",
         GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date))) AS "overdueDays",
-        CEIL(GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date)))::numeric / 7.0) * 500 AS "fineAmount",
+        COALESCE(f.fine_amount, CEIL(GREATEST(0, (COALESCE(l.returned_date, CURRENT_DATE) - COALESCE(l.due_date, (l.loan_date + 14)::date)))::numeric / 7.0) * 500) AS "fineAmount",
         f.status AS "fineStatus",
         f.status AS "fine_status",
         f.id AS "fine_id"
@@ -59,7 +59,7 @@ export class LoanModel {
       LEFT JOIN book b ON l.book_id = b.id
       LEFT JOIN member m ON l.member_id = m.id
       LEFT JOIN LATERAL (
-        SELECT status, id FROM fine WHERE loan_id = l.id ORDER BY id DESC LIMIT 1
+        SELECT fine_amount, status, id FROM fine WHERE loan_id = l.id ORDER BY id DESC LIMIT 1
       ) f ON true
       ORDER BY l.id DESC
     `);

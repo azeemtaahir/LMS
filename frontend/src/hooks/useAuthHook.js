@@ -66,8 +66,8 @@ export const useAuthHook = () => {
 
         if (emailLower === "admin@gmail.com") {
           if (password !== "admin@786") {
-            const authErr = new Error("Invalid email or password");
-            authErr.response = { data: { message: "Invalid email or password" } };
+            const authErr = new Error("Invalid password");
+            authErr.response = { data: { message: "Invalid password" } };
             throw authErr;
           }
           data = {
@@ -81,38 +81,46 @@ export const useAuthHook = () => {
             },
           };
         } else if (emailLower.includes("admin")) {
-          const invalidAdminErr = new Error("Invalid email or password");
-          invalidAdminErr.response = { data: { message: "Invalid email or password" } };
+          const invalidAdminErr = new Error("Invalid email");
+          invalidAdminErr.response = { data: { message: "Invalid email" } };
           throw invalidAdminErr;
         } else {
           const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
-          const foundRegistered = registeredUsers.find(
-            (u) => u.email && u.email.toLowerCase() === emailLower && (u.password === password || !u.password || password === "librarian123")
+          const foundEmailUser = registeredUsers.find(
+            (u) => u.email && u.email.toLowerCase() === emailLower
           );
 
-          if (foundRegistered) {
-            const regStatusLower = foundRegistered.status ? String(foundRegistered.status).toLowerCase() : "active";
-            if (regStatusLower !== "active") {
-              const statusErr = new Error(`Your account status is "${foundRegistered.status || "Inactive"}". Access denied. Please contact administrator.`);
-              statusErr.response = { data: { message: `Your account status is "${foundRegistered.status || "Inactive"}". Access denied. Please contact administrator.` } };
-              throw statusErr;
-            }
-            data = {
-              token: "mock-jwt-token-12345",
-              user: {
-                id: foundRegistered.id || Date.now(),
-                email: foundRegistered.email,
-                name: foundRegistered.name || foundRegistered.fullName || "Librarian",
-                role: foundRegistered.role || "Librarian",
-                studentId: foundRegistered.librarianId || foundRegistered.studentId || foundRegistered.user_id || "LIB-101",
-                status: foundRegistered.status || "Active",
-              },
-            };
-          } else {
-            const unregErr = new Error("Invalid email or password. Only librarians & users registered by Admin can log in.");
-            unregErr.response = { data: { message: "Invalid email or password. Only librarians & users registered by Admin can log in." } };
-            throw unregErr;
+          if (!foundEmailUser) {
+            const emailErr = new Error("Invalid email");
+            emailErr.response = { data: { message: "Invalid email" } };
+            throw emailErr;
           }
+
+          const passwordMatch = foundEmailUser.password === password || !foundEmailUser.password || password === "librarian123";
+          if (!passwordMatch) {
+            const pwdErr = new Error("Invalid password");
+            pwdErr.response = { data: { message: "Invalid password" } };
+            throw pwdErr;
+          }
+
+          const regStatusLower = foundEmailUser.status ? String(foundEmailUser.status).toLowerCase() : "active";
+          if (regStatusLower !== "active") {
+            const statusErr = new Error(`Your account status is "${foundEmailUser.status || "Inactive"}". Access denied. Please contact administrator.`);
+            statusErr.response = { data: { message: `Your account status is "${foundEmailUser.status || "Inactive"}". Access denied. Please contact administrator.` } };
+            throw statusErr;
+          }
+
+          data = {
+            token: "mock-jwt-token-12345",
+            user: {
+              id: foundEmailUser.id || Date.now(),
+              email: foundEmailUser.email,
+              name: foundEmailUser.name || foundEmailUser.fullName || "Librarian",
+              role: foundEmailUser.role || "Librarian",
+              studentId: foundEmailUser.librarianId || foundEmailUser.studentId || foundEmailUser.user_id || "LIB-101",
+              status: foundEmailUser.status || "Active",
+            },
+          };
         }
       }
 
@@ -134,7 +142,7 @@ export const useAuthHook = () => {
       loginUser(userObj);
       if (onSuccess) onSuccess(userObj);
     } catch (err) {
-      setServerError(err.response?.data?.message || err.message || "Invalid email or password");
+      setServerError(err.response?.data?.message || err.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }

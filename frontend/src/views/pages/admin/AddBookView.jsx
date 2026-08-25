@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { useBookController } from "../../../hooks/useBookHook";
 import api from "../../../api/api";
 
@@ -121,177 +121,172 @@ export default function AddBookView({ onCancel, onSuccess }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-6 select-none">
+    <div className="max-w-4xl mx-auto space-y-2 pb-2 select-none">
       {/* Top Header */}
       <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={handleCancel}
-          className="flex items-center gap-1.5 text-xs font-semibold text-[#522E1E] hover:text-[#2C1810] transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={15} />
           Back to Manage Books
         </button>
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-900/10 shadow-xs space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* LEFT COLUMN */}
-          <div className="space-y-4">
-            {/* Book Title */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Book Title *</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Enter book title"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-                required
-              />
-            </div>
-
-            {/* Author Name */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Author Name *</label>
-              <input
-                type="text"
-                name="author"
-                value={formData.author}
-                onChange={handleChange}
-                placeholder="Enter author name"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-                required
-              />
-            </div>
-
-            {/* ISBN */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">ISBN *</label>
-              <input
-                type="text"
-                name="isbn"
-                value={formData.isbn}
-                onChange={handleChange}
-                placeholder="Enter ISBN"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-                required
-              />
-            </div>
-
-            {/* Category Dropdown */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Category *</label>
-              <select
-                name="category"
-                value={isCustomCategory ? "Other" : formData.category}
-                onChange={handleCategorySelect}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition cursor-pointer"
-                required
-              >
-                <option value="">Select Category</option>
-                {allCategoryOptions.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-                <option value="Other">+ Add Custom Category</option>
-              </select>
-            </div>
-
-            {/* Custom Category Input */}
-            {isCustomCategory && (
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">Custom Category Name *</label>
-                <input
-                  type="text"
-                  name="customCategory"
-                  value={customCategory}
-                  onChange={(e) => {
-                    setCustomCategory(e.target.value);
-                    setFormData((prev) => ({ ...prev, category: e.target.value }));
-                  }}
-                  placeholder="Enter custom category name"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-                  required
-                />
-              </div>
-            )}
+      <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+          {/* Book Title */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Book Title *</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Enter book title"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              required
+            />
           </div>
 
-          {/* RIGHT COLUMN */}
-          <div className="space-y-4">
-            {/* Quantity */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Quantity</label>
-              <input
-                type="number"
-                min="1"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleChange}
-                placeholder="Enter quantity"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-              />
-            </div>
+          {/* Author Name */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Author Name *</label>
+            <input
+              type="text"
+              name="author"
+              value={formData.author}
+              onChange={handleChange}
+              placeholder="Enter author name"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              required
+            />
+          </div>
 
-            {/* Shelf Number */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Shelf Number</label>
+          {/* ISBN */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">ISBN *</label>
+            <input
+              type="text"
+              name="isbn"
+              value={formData.isbn}
+              onChange={handleChange}
+              placeholder="Enter ISBN"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              required
+            />
+          </div>
+
+          {/* Category Dropdown */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Category *</label>
+            <select
+              name="category"
+              value={isCustomCategory ? "Other" : formData.category}
+              onChange={handleCategorySelect}
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition cursor-pointer"
+              required
+            >
+              <option value="">Select Category</option>
+              {allCategoryOptions.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+              <option value="Other">+ Add Custom Category</option>
+            </select>
+          </div>
+
+          {/* Custom Category Input */}
+          {isCustomCategory && (
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Custom Category Name *</label>
               <input
                 type="text"
-                name="shelfNumber"
-                value={formData.shelfNumber}
-                onChange={handleChange}
-                placeholder="Enter shelf number"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
+                name="customCategory"
+                value={customCategory}
+                onChange={(e) => {
+                  setCustomCategory(e.target.value);
+                  setFormData((prev) => ({ ...prev, category: e.target.value }));
+                }}
+                placeholder="Enter custom category name"
+                className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+                required
               />
             </div>
+          )}
 
-            {/* Publisher */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Publisher</label>
-              <input
-                type="text"
-                name="publisher"
-                value={formData.publisher}
-                onChange={handleChange}
-                placeholder="Enter publisher"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-              />
-            </div>
+          {/* Quantity */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Quantity</label>
+            <input
+              type="number"
+              min="1"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleChange}
+              placeholder="Enter quantity"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+            />
+          </div>
 
-            {/* Edition */}
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">Edition</label>
-              <input
-                type="text"
-                name="edition"
-                value={formData.edition}
-                onChange={handleChange}
-                placeholder="Enter edition"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-[#522E1E] focus:outline-none transition"
-              />
-            </div>
+          {/* Shelf Number */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Shelf Number</label>
+            <input
+              type="text"
+              name="shelfNumber"
+              value={formData.shelfNumber}
+              onChange={handleChange}
+              placeholder="Enter shelf number"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+            />
+          </div>
+
+          {/* Publisher */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Publisher</label>
+            <input
+              type="text"
+              name="publisher"
+              value={formData.publisher}
+              onChange={handleChange}
+              placeholder="Enter publisher"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+            />
+          </div>
+
+          {/* Edition */}
+          <div>
+            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Edition</label>
+            <input
+              type="text"
+              name="edition"
+              value={formData.edition}
+              onChange={handleChange}
+              placeholder="Enter edition"
+              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+            />
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-100">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
           <button
             type="button"
             onClick={handleCancel}
-            className="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-100 text-xs font-semibold transition cursor-pointer"
+            className="px-4 py-1.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-100 text-xs font-semibold transition cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-[#2C1810] text-white hover:bg-[#42261A] text-xs font-semibold transition shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500 text-xs font-semibold transition-all duration-200 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer"
           >
-            Save Book
+            <Save size={14} />
+            <span>Save Book</span>
           </button>
         </div>
       </form>
