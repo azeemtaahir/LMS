@@ -13,7 +13,7 @@ const lms = new Pool({
 });
 
 lms.on('connect', () => {
-  console.log("PostgreSQL Connected to database:", dbName);
+  console.log("PostgreSQL Connected :");
 });
 
 lms.on('error', (err) => {
