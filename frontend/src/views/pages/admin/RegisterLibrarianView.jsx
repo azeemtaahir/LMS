@@ -63,15 +63,19 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-2 pb-2 select-none">
-      {/* Header */}
-      <div className="flex items-center justify-end">
+      {/* Top Header - Dark Navy Bar */}
+      <div className="bg-slate-900 p-3 sm:px-4 sm:py-3 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
+        <div>
+          <h2 className="text-base font-extrabold text-white tracking-tight">Register Librarian</h2>
+          <p className="text-[11px] text-slate-400 font-medium">Create staff account credentials and shift permissions for new librarian.</p>
+        </div>
         <button
           type="button"
           onClick={handleCancel}
-          className="flex items-center gap-1.5 text-xs font-semibold text-[#522E1E] hover:text-[#2C1810] transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-300 hover:text-white transition-colors cursor-pointer bg-indigo-500/20 hover:bg-indigo-500/30 px-3 py-1.5 rounded-xl border border-indigo-500/30 shadow-xs"
         >
-          <ArrowLeft size={15} />
-          Back to Manage Librarians
+          <ArrowLeft size={13} />
+          <span>Back to Manage Librarians</span>
         </button>
       </div>
 

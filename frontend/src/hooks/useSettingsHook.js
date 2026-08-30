@@ -57,7 +57,41 @@ export const useSettingsHook = () => {
       fine_payment: 0,
     },
     status: "Healthy & Connected",
+    lastRefreshedAt: new Date().toLocaleTimeString(),
   });
+
+  const [lastBackupTime, setLastBackupTime] = useState(
+    localStorage.getItem("lms_last_backup_time") || "Not performed today"
+  );
+
+  // =========================
+  // DYNAMIC FETCH DB STATS
+  // =========================
+  const fetchLiveDbStats = async () => {
+    try {
+      const res = await api.post("/settings/test-db");
+      if (res.data?.success && res.data?.dbStats) {
+        setDbStats({
+          ...res.data.dbStats,
+          lastRefreshedAt: new Date().toLocaleTimeString(),
+        });
+      }
+    } catch (err) {
+      console.warn("Dynamic DB fetch notice:", err.message);
+      // Fallback update timestamp
+      setDbStats((prev) => ({
+        ...prev,
+        lastRefreshedAt: new Date().toLocaleTimeString(),
+      }));
+    }
+  };
+
+  // Automatically refresh DB stats when switching to Database & Backup tab
+  useEffect(() => {
+    if (activeTab === "Database & Backup") {
+      fetchLiveDbStats();
+    }
+  }, [activeTab]);
 
   // =========================
   // FETCH SETTINGS
@@ -67,7 +101,6 @@ export const useSettingsHook = () => {
 
     const loadSettings = async () => {
       try {
-        // Loading starts before the API request
         if (isMounted) {
           setLoading(true);
         }
@@ -77,15 +110,8 @@ export const useSettingsHook = () => {
         if (!isMounted) return;
 
         if (response.data.success) {
-          const {
-            settings,
-            dbStats: stats,
-            adminProfile,
-          } = response.data;
+          const { settings, dbStats: stats, adminProfile } = response.data;
 
-          // -------------------------
-          // Admin Profile
-          // -------------------------
           if (adminProfile) {
             setProfileData((prev) => ({
               ...prev,
@@ -93,63 +119,37 @@ export const useSettingsHook = () => {
             }));
           }
 
-          // -------------------------
-          // Library Settings
-          // -------------------------
           if (settings) {
             setLibraryInfo({
-              library_name:
-                settings.library_name ||
-                "Central University Library",
-
-              library_address:
-                settings.library_address ||
-                "123 University Campus, Education Block",
-
-              library_email:
-                settings.library_email ||
-                "contact@library.edu",
-
-              max_issue_limit:
-                settings.max_issue_limit || "5",
-
-              issue_period_days:
-                settings.issue_period_days || "14",
-
-              fine_per_week:
-                settings.fine_per_week || "500",
+              library_name: settings.library_name || "Central University Library",
+              library_address: settings.library_address || "123 University Campus, Education Block",
+              library_email: settings.library_email || "contact@library.edu",
+              max_issue_limit: settings.max_issue_limit || "5",
+              issue_period_days: settings.issue_period_days || "14",
+              fine_per_week: settings.fine_per_week || "500",
             });
 
-            // -------------------------
-            // Preferences
-            // -------------------------
             setPreferences({
-              email_notifications:
-                settings.email_notifications || "true",
-
-              auto_fine_calc:
-                settings.auto_fine_calc || "true",
-
-              theme:
-                settings.theme || "light",
-
-              language:
-                settings.language || "English",
+              email_notifications: settings.email_notifications || "true",
+              auto_fine_calc: settings.auto_fine_calc || "true",
+              theme: settings.theme || "light",
+              language: settings.language || "English",
             });
+
+            if (settings.last_backup_date) {
+              setLastBackupTime(settings.last_backup_date);
+            }
           }
 
-          // -------------------------
-          // Database Statistics
-          // -------------------------
           if (stats) {
-            setDbStats(stats);
+            setDbStats({
+              ...stats,
+              lastRefreshedAt: new Date().toLocaleTimeString(),
+            });
           }
         }
       } catch (err) {
-        console.warn(
-          "Could not load backend settings, using local defaults:",
-          err.message
-        );
+        console.warn("Could not load backend settings, using local defaults:", err.message);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -159,7 +159,6 @@ export const useSettingsHook = () => {
 
     loadSettings();
 
-    // Cleanup
     return () => {
       isMounted = false;
     };
@@ -369,88 +368,22 @@ export const useSettingsHook = () => {
       const res = await api.post("/settings/backup");
 
       if (res.data.success) {
+        const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const backupStamp = `Today at ${timeNow}`;
+        setLastBackupTime(backupStamp);
+        localStorage.setItem("lms_last_backup_time", backupStamp);
+
         setMessage({
           type: "success",
-          text:
-            res.data.message ||
-            "Database backup snapshot generated!",
+          text: res.data.message || `Database backup snapshot generated successfully (${timeNow})!`,
         });
 
-        // Refresh settings after backup
-        // We can simply request the endpoint again.
-        try {
-          const response = await api.get("/settings");
-
-          if (response.data.success) {
-            const {
-              settings,
-              dbStats: stats,
-              adminProfile,
-            } = response.data;
-
-            if (adminProfile) {
-              setProfileData((prev) => ({
-                ...prev,
-                ...adminProfile,
-              }));
-            }
-
-            if (settings) {
-              setLibraryInfo({
-                library_name:
-                  settings.library_name ||
-                  "Central University Library",
-
-                library_address:
-                  settings.library_address ||
-                  "123 University Campus, Education Block",
-
-                library_email:
-                  settings.library_email ||
-                  "contact@library.edu",
-
-                max_issue_limit:
-                  settings.max_issue_limit || "5",
-
-                issue_period_days:
-                  settings.issue_period_days || "14",
-
-                fine_per_week:
-                  settings.fine_per_week || "500",
-              });
-
-              setPreferences({
-                email_notifications:
-                  settings.email_notifications || "true",
-
-                auto_fine_calc:
-                  settings.auto_fine_calc || "true",
-
-                theme:
-                  settings.theme || "light",
-
-                language:
-                  settings.language || "English",
-              });
-            }
-
-            if (stats) {
-              setDbStats(stats);
-            }
-          }
-        } catch (refreshError) {
-          console.warn(
-            "Backup succeeded but settings refresh failed:",
-            refreshError.message
-          );
-        }
+        await fetchLiveDbStats();
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text:
-          "Backup operation failed: " +
-          err.message,
+        text: "Backup operation failed: " + err.message,
       });
     } finally {
       setSaving(false);
@@ -463,28 +396,21 @@ export const useSettingsHook = () => {
   return {
     activeTab,
     setActiveTab,
-
     loading,
-
     saving,
-
     message,
     setMessage,
-
     profileData,
     setProfileData,
-
     passwordData,
     setPasswordData,
-
     libraryInfo,
     setLibraryInfo,
-
     preferences,
     setPreferences,
-
     dbStats,
-
+    lastBackupTime,
+    fetchLiveDbStats,
     handleProfileSubmit,
     handlePasswordSubmit,
     handleLibraryInfoSubmit,
