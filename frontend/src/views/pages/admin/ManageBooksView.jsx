@@ -189,9 +189,10 @@ export default function ManageBooksView() {
               <thead className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-indigo-200 font-semibold uppercase tracking-wider text-[11px] border-b border-indigo-950">
                 <tr>
                   <th className="py-3.5 px-4">Cover</th>
-                  <th className="py-3.5 px-4">ID</th>
+                  <th className="py-3.5 px-4">ISBN</th>
                   <th className="py-3.5 px-4">Book Title</th>
                   <th className="py-3.5 px-4">Author</th>
+                  <th className="py-3.5 px-4">Edition</th>
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Quantity</th>
                   <th className="py-3.5 px-4">Status</th>
@@ -224,9 +225,10 @@ export default function ManageBooksView() {
                           className="w-10 h-14 object-cover rounded shadow-xs bg-slate-100 border border-slate-200"
                         />
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-900">{book.id}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">{book.isbn || "N/A"}</td>
                       <td className="py-3 px-4 font-semibold text-slate-800">{book.title}</td>
                       <td className="py-3 px-4 text-slate-600">{book.author || "Unknown Author"}</td>
+                      <td className="py-3 px-4 font-medium text-slate-600">{book.edition || "1st Edition"}</td>
                       <td className="py-3 px-4 text-slate-600">{book.category || "General"}</td>
                       <td className="py-3 px-4 font-semibold text-slate-800">
                         <span className="text-emerald-600 font-bold">{book.availableCopies ?? book.copies_owned ?? 0}</span>
@@ -324,14 +326,15 @@ export default function ManageBooksView() {
       {viewingBook && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-stone-200 overflow-hidden space-y-4 p-6 select-none animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Eye className="text-indigo-600" size={18} />
+            {/* Dark Navy Modal Header Bar */}
+            <div className="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Eye className="text-indigo-400" size={18} />
                 Book Details
               </h3>
               <button
                 onClick={() => setViewingBook(null)}
-                className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition cursor-pointer"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -391,6 +394,14 @@ export default function ManageBooksView() {
                   </span>
                 </div>
                 <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Edition</span>
+                  <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.edition || "1st Edition"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Publisher</span>
+                  <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.publisher || "N/A"}</span>
+                </div>
+                <div>
                   <span className="text-slate-400 font-medium block text-[10px] uppercase tracking-wider">Shelf Number</span>
                   <span className="text-slate-700 font-semibold block mt-0.5">{viewingBook.shelfNumber || "N/A"}</span>
                 </div>
@@ -413,14 +424,15 @@ export default function ManageBooksView() {
       {editingBook && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-stone-200 overflow-hidden space-y-4 p-6 select-none animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Edit className="text-indigo-600" size={18} />
+            {/* Dark Navy Modal Header Bar */}
+            <div className="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Edit className="text-indigo-400" size={18} />
                 Edit Book
               </h3>
               <button
                 onClick={() => setEditingBook(null)}
-                className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition cursor-pointer"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
               >
                 <X size={18} />
               </button>

@@ -141,7 +141,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* Links with section headings & scrolling */}
-          <nav className="flex-1 overflow-y-auto my-3 py-1 space-y-4 pr-1 scrollbar-thin">
+          <nav className="flex-1 overflow-y-auto my-3 py-1 space-y-4 pr-1 no-scrollbar">
             {getNavSections().map((section) => (
               <div key={section.heading} className="space-y-1">
                 <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 select-none">

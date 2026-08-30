@@ -121,13 +121,17 @@ export default function AddBookView({ onCancel, onSuccess }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-2 pb-2 select-none">
+    <div className="max-w-5xl mx-auto space-y-4 pb-6 select-none">
       {/* Top Header */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Add New Book</h2>
+          <p className="text-xs text-slate-500 font-medium">Enter book metadata and inventory details to add to the library catalog.</p>
+        </div>
         <button
           type="button"
           onClick={handleCancel}
-          className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-indigo-50 hover:bg-indigo-100 px-3.5 py-2 rounded-xl border border-indigo-100"
         >
           <ArrowLeft size={15} />
           Back to Manage Books
@@ -135,58 +139,58 @@ export default function AddBookView({ onCancel, onSuccess }) {
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+      <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-xs">
           {/* Book Title */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Book Title *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Book Title *</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               placeholder="Enter book title"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
               required
             />
           </div>
 
           {/* Author Name */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Author Name *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Author Name *</label>
             <input
               type="text"
               name="author"
               value={formData.author}
               onChange={handleChange}
               placeholder="Enter author name"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
               required
             />
           </div>
 
           {/* ISBN */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">ISBN *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">ISBN *</label>
             <input
               type="text"
               name="isbn"
               value={formData.isbn}
               onChange={handleChange}
               placeholder="Enter ISBN"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
               required
             />
           </div>
 
           {/* Category Dropdown */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Category *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Category *</label>
             <select
               name="category"
               value={isCustomCategory ? "Other" : formData.category}
               onChange={handleCategorySelect}
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition cursor-pointer"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition cursor-pointer"
               required
             >
               <option value="">Select Category</option>
@@ -202,7 +206,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
           {/* Custom Category Input */}
           {isCustomCategory && (
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Custom Category Name *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Custom Category Name *</label>
               <input
                 type="text"
                 name="customCategory"
@@ -212,7 +216,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
                   setFormData((prev) => ({ ...prev, category: e.target.value }));
                 }}
                 placeholder="Enter custom category name"
-                className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
                 required
               />
             </div>
@@ -220,7 +224,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
 
           {/* Quantity */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Quantity</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Quantity</label>
             <input
               type="number"
               min="1"
@@ -228,64 +232,64 @@ export default function AddBookView({ onCancel, onSuccess }) {
               value={formData.quantity}
               onChange={handleChange}
               placeholder="Enter quantity"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
             />
           </div>
 
           {/* Shelf Number */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Shelf Number</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Shelf Number</label>
             <input
               type="text"
               name="shelfNumber"
               value={formData.shelfNumber}
               onChange={handleChange}
               placeholder="Enter shelf number"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
             />
           </div>
 
           {/* Publisher */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Publisher</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Publisher</label>
             <input
               type="text"
               name="publisher"
               value={formData.publisher}
               onChange={handleChange}
               placeholder="Enter publisher"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
             />
           </div>
 
           {/* Edition */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">Edition</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Edition</label>
             <input
               type="text"
               name="edition"
               value={formData.edition}
               onChange={handleChange}
               placeholder="Enter edition"
-              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50/50 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
             />
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-1.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-100 text-xs font-semibold transition cursor-pointer"
+            className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm font-semibold transition cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 px-5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500 text-xs font-semibold transition-all duration-200 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500 text-xs sm:text-sm font-bold transition-all duration-200 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer"
           >
-            <Save size={14} />
+            <Save size={16} />
             <span>Save Book</span>
           </button>
         </div>

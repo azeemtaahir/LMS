@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useBookController } from "../../../hooks/useBookHook";
 import BookCoverImage from "../../components/BookCoverImage";
+import Pagination from "../../components/Pagination";
 import {
   Search,
   BookOpen,
@@ -27,6 +28,12 @@ export default function PublicDashboardView() {
 
   const [availabilityFilter, setAvailabilityFilter] = useState("All");
   const [selectedBook, setSelectedBook] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, availabilityFilter]);
 
   const defaultCategories = [
     "All",
@@ -56,6 +63,10 @@ export default function PublicDashboardView() {
 
     return matchesSearch && matchesCat && matchesAvail;
   });
+
+  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedBooks = filteredBooks.slice(startIndex, startIndex + itemsPerPage);
 
   const getUserDashboardPath = () => {
     if (!user) return "/login";
@@ -232,10 +243,10 @@ export default function PublicDashboardView() {
         </div>
 
         {/* BOOK GRID */}
-        <div>
+        <div className="space-y-6">
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-sm font-bold text-slate-200">
-              Catalog Books ({filteredBooks.length})
+              Catalog Books ({filteredBooks.length > 0 ? `${startIndex + 1}–${Math.min(startIndex + itemsPerPage, filteredBooks.length)} of ${filteredBooks.length}` : 0})
             </h2>
             {(searchQuery || selectedCategory !== "All" || availabilityFilter !== "All") && (
               <button
@@ -258,74 +269,80 @@ export default function PublicDashboardView() {
               <p className="text-xs text-slate-500">Try adjusting your search query or filters.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
-              {filteredBooks.map((book) => {
-                const copies = book.availableCopies !== undefined ? book.availableCopies : (book.availableQuantity || 1);
-                const isAvailable = copies > 0;
+            <>
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+                {paginatedBooks.map((book) => {
+                  const copies = book.availableCopies !== undefined ? book.availableCopies : (book.availableQuantity || 1);
+                  const isAvailable = copies > 0;
 
-                return (
-                  <div
-                    key={book.id}
-                    className="bg-slate-900 rounded-2xl border border-slate-800 hover:border-indigo-500/50 shadow-md hover:shadow-xl hover:shadow-indigo-500/5 transition-all flex flex-col justify-between overflow-hidden group"
-                  >
-                    <div className="p-3 sm:p-3.5 space-y-2.5">
-                      <div className="w-full aspect-[3/4] rounded-xl bg-slate-950 border border-slate-800 relative overflow-hidden group-hover:scale-[1.02] transition-transform flex items-center justify-center">
-                        <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
-                        <span
-                          className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold border shadow-md backdrop-blur-sm ${
-                            isAvailable
-                              ? "bg-emerald-500/80 text-emerald-100 border-emerald-400/50"
-                              : "bg-rose-500/80 text-rose-100 border-rose-400/50"
-                          }`}
-                        >
-                          {isAvailable ? `${copies} Avail` : "Out"}
-                        </span>
+                  return (
+                    <div
+                      key={book.id}
+                      className="bg-slate-900 rounded-2xl border border-slate-800 hover:border-indigo-500/50 shadow-md hover:shadow-xl hover:shadow-indigo-500/5 transition-all flex flex-col justify-between overflow-hidden group"
+                    >
+                      <div className="p-3 sm:p-3.5 space-y-2.5">
+                        <div className="w-full aspect-[3/4] rounded-xl bg-slate-950 border border-slate-800 relative overflow-hidden group-hover:scale-[1.02] transition-transform flex items-center justify-center">
+                          <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
+                          <span
+                            className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold border shadow-md backdrop-blur-sm ${
+                              isAvailable
+                                ? "bg-emerald-500/80 text-emerald-100 border-emerald-400/50"
+                                : "bg-rose-500/80 text-rose-100 border-rose-400/50"
+                            }`}
+                          >
+                            {isAvailable ? `${copies} Avail` : "Out"}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[9px] sm:text-[10px] font-semibold border border-indigo-500/20 inline-block max-w-full truncate">
+                            {book.category || "General"}
+                          </span>
+                          <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors" title={book.title}>
+                            {book.title}
+                          </h3>
+                          <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate" title={book.author}>
+                            By {book.author}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[9px] sm:text-[10px] font-semibold border border-indigo-500/20 inline-block max-w-full truncate">
-                          {book.category || "General"}
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors" title={book.title}>
-                          {book.title}
-                        </h3>
-                        <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate" title={book.author}>
-                          By {book.author}
-                        </p>
+                      <div className={`p-2 sm:p-2.5 bg-slate-950/60 border-t border-slate-800/80 ${user ? "grid grid-cols-2 gap-1.5" : "flex"}`}>
+                        <button
+                          onClick={() => setSelectedBook(book)}
+                          className="w-full py-1.5 sm:py-2 px-1.5 sm:px-2.5 rounded-xl border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 min-w-0"
+                        >
+                          <Info size={13} className="shrink-0" />
+                          <span className="truncate">Details</span>
+                        </button>
+
+                        {user && (
+                          <button
+                            onClick={() => navigate(getUserDashboardPath())}
+                            className="w-full py-1.5 sm:py-2 px-1.5 sm:px-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20 min-w-0"
+                          >
+                            <BookmarkPlus size={13} className="shrink-0" />
+                            <span className="truncate">Reserve</span>
+                          </button>
+                        )}
                       </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    <div className="p-2 sm:p-2.5 bg-slate-950/60 border-t border-slate-800/80 grid grid-cols-2 gap-1.5">
-                      <button
-                        onClick={() => setSelectedBook(book)}
-                        className="w-full py-1.5 sm:py-2 px-1.5 sm:px-2.5 rounded-xl border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 min-w-0"
-                      >
-                        <Info size={13} className="shrink-0" />
-                        <span className="truncate">Details</span>
-                      </button>
-
-                      {user ? (
-                        <button
-                          onClick={() => navigate(getUserDashboardPath())}
-                          className="w-full py-1.5 sm:py-2 px-1.5 sm:px-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20 min-w-0"
-                        >
-                          <BookmarkPlus size={13} className="shrink-0" />
-                          <span className="truncate">Reserve</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => navigate("/login")}
-                          className="w-full py-1.5 sm:py-2 px-1.5 sm:px-2.5 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 border border-slate-700 min-w-0"
-                        >
-                          <LogIn size={13} className="shrink-0" />
-                          <span className="truncate">Login</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+              {/* PAGINATION */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredBooks.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  window.scrollTo({ top: 400, behavior: "smooth" });
+                }}
+              />
+            </>
           )}
         </div>
       </main>

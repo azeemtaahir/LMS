@@ -317,18 +317,19 @@ export default function ManageUsersView() {
             return (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
                 <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  {/* Dark Navy Modal Header Bar */}
+                  <div className="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-800 text-base">User Details</h3>
+                      <h3 className="font-bold text-white text-base">User Details</h3>
                       {overdueLoans.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30">
                           <AlertTriangle size={12} /> {overdueLoans.length} Overdue
                         </span>
                       )}
                     </div>
                     <button
                       onClick={() => setViewMember(null)}
-                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                      className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
                     >
                       <X size={18} />
                     </button>
@@ -419,12 +420,13 @@ export default function ManageUsersView() {
           {editMember && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
               <form onSubmit={handleSaveEdit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <h3 className="font-bold text-slate-800 text-base">Edit User</h3>
+                {/* Dark Navy Modal Header Bar */}
+                <div className="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
+                  <h3 className="font-bold text-white text-base">Edit User</h3>
                   <button
                     type="button"
                     onClick={() => setEditMember(null)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                    className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
                   >
                     <X size={18} />
                   </button>

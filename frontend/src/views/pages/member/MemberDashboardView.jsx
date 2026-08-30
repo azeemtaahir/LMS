@@ -102,18 +102,18 @@ export default function MemberDashboardView() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10 select-none">
       {/* GREETING HERO HEADER */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-3.5 sm:px-6 sm:py-4 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold mb-2 border border-indigo-500/30">
-              <Sparkles size={13} className="text-amber-400 fill-amber-400" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-semibold mb-1 border border-indigo-500/30">
+              <Sparkles size={12} className="text-amber-400 fill-amber-400" />
               <span>Library User Portal</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
               Welcome back, {memberName}!
             </h1>
-            <div className="flex items-center gap-2 mt-1 text-xs text-slate-300">
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-300">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">
                 {memberRole === "Teacher" ? <UserCheck size={12} /> : <GraduationCap size={12} />}
                 {memberRole}
@@ -128,7 +128,7 @@ export default function MemberDashboardView() {
           <div className="flex gap-2">
             <Link
               to="/search"
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 inline-flex items-center gap-1.5"
+              className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 inline-flex items-center gap-1.5"
             >
               <Search size={14} />
               <span>Search Books</span>

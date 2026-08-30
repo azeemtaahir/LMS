@@ -34,22 +34,22 @@ export default function LibrarianDashboardView() {
   return (
     <div className="space-y-6 select-none">
       {/* Top Banner & Quick Actions */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-3.5 sm:px-6 sm:py-4 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[10px] font-semibold tracking-wider uppercase mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[10px] font-semibold tracking-wider uppercase mb-1">
               Circulation Desk
             </span>
-            <h1 className="text-xl font-bold tracking-wide text-white">Librarian Workbench</h1>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl">Manage catalog inventory, execute book circulation, and inspect analytics.</p>
+            <h1 className="text-lg sm:text-xl font-bold tracking-wide text-white">Librarian Workbench</h1>
+            <p className="text-xs text-slate-300 mt-0.5 max-w-xl">Manage catalog inventory, execute book circulation, and inspect analytics.</p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button 
               onClick={() => navigate('/issue-lib')}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-1.5 sm:py-2 rounded-xl transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
             >
               <BookUp size={15} />
               <span>Issue Book</span>
@@ -57,7 +57,7 @@ export default function LibrarianDashboardView() {
             
             <button 
               onClick={() => navigate('/return-lib')}
-              className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all border border-slate-700/80 cursor-pointer"
+              className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-1.5 sm:py-2 rounded-xl transition-all border border-slate-700/80 cursor-pointer"
             >
               <BookDown size={15} />
               <span>Fine Book</span>

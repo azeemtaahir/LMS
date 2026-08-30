@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Search, Bell, User as UserIcon, Menu, PlusCircle, UserPlus, X, Receipt, LogOut } from "lucide-react";
+import { Search, User as UserIcon, Menu, PlusCircle, UserPlus, X, Receipt, LogOut } from "lucide-react";
 
 export default function Navbar({ onToggleSidebar }) {
   const { user, logoutUser } = useAuth();
@@ -329,12 +329,6 @@ export default function Navbar({ onToggleSidebar }) {
           </div>
         )}
 
-        {!isUsersPage && !isBooksPage && !isLibrariansPage && !isIssuedBooksPage && (
-          <button className="relative p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white" />
-          </button>
-        )}
 
         <div className="flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-3 border-l border-slate-200">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-indigo-600/20 shrink-0">

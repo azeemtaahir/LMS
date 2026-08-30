@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Bell, Menu, LogOut, Receipt } from 'lucide-react';
+import { Search, Menu, LogOut, Receipt } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LibrarianNavbar({ onToggleSidebar }) {
@@ -81,10 +81,6 @@ export default function LibrarianNavbar({ onToggleSidebar }) {
           </button>
         )}
 
-        <button type="button" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 relative">
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full"></span>
-        </button>
         
         <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">

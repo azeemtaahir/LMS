@@ -262,11 +262,12 @@ export default function ManageLibrarianView() {
       {viewingLibrarian && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm">Librarian Details</h3>
+            {/* Dark Navy Modal Header Bar */}
+            <div className="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
+              <h3 className="font-bold text-white text-sm">Librarian Details</h3>
               <button
                 onClick={() => setViewingLibrarian(null)}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition"
               >
                 <X size={18} />
               </button>
@@ -311,11 +312,12 @@ export default function ManageLibrarianView() {
       {editingLibrarian && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm">Edit Librarian Profile</h3>
+            {/* Dark Navy Modal Header Bar */}
+            <div className="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between text-white">
+              <h3 className="font-bold text-white text-sm">Edit Librarian Profile</h3>
               <button
                 onClick={() => setEditingLibrarian(null)}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition"
               >
                 <X size={18} />
               </button>
