@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import api from "../api/api";
 
 const getTodayStr = () => new Date().toISOString().split("T")[0];
@@ -165,12 +166,12 @@ export const useTransactionHook = () => {
       e.preventDefault();
     }
     if (!issueFormData.studentId || !issueFormData.bookId) {
-      alert("Please select both a borrower user and a book.");
+      toast.warning("Please select both a borrower user and a book.");
       return false;
     }
 
     if (selectedBook && Number(selectedBook.availableCopies) <= 0) {
-      alert(`Book "${selectedBook.title || 'Selected Book'}" is not available (0 copies in stock). Cannot issue book.`);
+      toast.warning(`Book "${selectedBook.title || 'Selected Book'}" is not available (0 copies in stock). Cannot issue book.`);
       return false;
     }
 
@@ -209,7 +210,7 @@ export const useTransactionHook = () => {
 
     if (existingActiveLoan) {
       const msg = `This member already has an active issue/borrow for '${existingActiveLoan.bookTitle || bookTitleVal}'. One person can never take the same book title at a time.`;
-      alert(msg);
+      toast.warning(msg);
       return false;
     }
 
@@ -231,7 +232,7 @@ export const useTransactionHook = () => {
       await api.post("/loans", payload);
       await fetchTransactions();
       window.dispatchEvent(new Event("book-updated"));
-      alert("Book issued successfully!");
+      toast.success("Book issued successfully!");
       const freshToday = getTodayStr();
       setIssueFormData({
         studentId: "",
@@ -245,7 +246,7 @@ export const useTransactionHook = () => {
     } catch (err) {
       console.error("API POST /loans failed:", err?.response?.data || err?.message);
       const errMsg = err?.response?.data?.message || err?.message || "Book not available or issue failed.";
-      alert(errMsg);
+      toast.error(errMsg);
       return false;
     }
   };
@@ -255,7 +256,7 @@ export const useTransactionHook = () => {
       e.preventDefault();
     }
     if (!searchStudentId && !searchBookId) {
-      alert("Please enter a Student ID or Book ID to search.");
+      toast.warning("Please enter a Student ID or Book ID to search.");
       return;
     }
     const found = recentIssues.find(
@@ -280,7 +281,7 @@ export const useTransactionHook = () => {
       });
     } else {
       setActiveReturnDetails(null);
-      alert("No matching active loan record found.");
+      toast.info("No matching active loan record found.");
     }
   };
 
@@ -301,7 +302,7 @@ export const useTransactionHook = () => {
 
       await fetchTransactions();
       window.dispatchEvent(new Event("book-updated"));
-      alert("Book returned successfully!");
+      toast.success("Book returned successfully!");
       setActiveReturnDetails(null);
     } catch (err) {
       console.error("Return book error", err);
@@ -325,7 +326,7 @@ export const useTransactionHook = () => {
 
       await fetchTransactions();
       window.dispatchEvent(new Event("book-updated"));
-      alert(`Book "${loanItem.bookTitle || "Book"}" returned successfully!`);
+      toast.success(`Book "${loanItem.bookTitle || "Book"}" returned successfully!`);
     } catch (err) {
       console.error("Return loan error", err);
     }
@@ -368,7 +369,7 @@ export const useTransactionHook = () => {
 
       await fetchTransactions();
       window.dispatchEvent(new Event("book-updated"));
-      alert(`Fine of ${fineAmount} PKR marked as Paid for "${loanItem.studentName || "Member"}"! Issued book status updated to Returned.`);
+      toast.success(`Fine of ${fineAmount} PKR marked as Paid for "${loanItem.studentName || "Member"}"! Issued book status updated to Returned.`);
     } catch (err) {
       console.error("Pay fine error", err);
     }
@@ -386,18 +387,18 @@ export const useTransactionHook = () => {
 
   const handleExtendLoanDueDate = async (loanId, newDueDate) => {
     if (!loanId || !newDueDate) {
-      alert("Please select a valid new return due date.");
+      toast.warning("Please select a valid new return due date.");
       return false;
     }
     try {
       await api.put(`/loans/${loanId}`, { due_date: newDueDate, returnDate: newDueDate });
       await fetchTransactions();
       window.dispatchEvent(new Event("book-updated"));
-      alert("Issued book loan duration updated successfully!");
+      toast.success("Issued book loan duration updated successfully!");
       return true;
     } catch (err) {
       console.error("Failed to extend loan due date:", err);
-      alert(err?.response?.data?.message || "Failed to update loan due date.");
+      toast.error(err?.response?.data?.message || "Failed to update loan due date.");
       return false;
     }
   };
@@ -406,7 +407,7 @@ export const useTransactionHook = () => {
     if (!loanItem) return false;
     const amountNum = Number(newFineAmount);
     if (isNaN(amountNum) || amountNum < 0) {
-      alert("Please enter a valid fine amount.");
+      toast.warning("Please enter a valid fine amount.");
       return false;
     }
     const targetLoanId = loanItem.loan_id || loanItem.id;
@@ -434,7 +435,7 @@ export const useTransactionHook = () => {
 
     await fetchTransactions();
     window.dispatchEvent(new Event("book-updated"));
-    alert(`Fine amount updated to ${amountNum} PKR successfully!`);
+    toast.success(`Fine amount updated to ${amountNum} PKR successfully!`);
     return true;
   };
 

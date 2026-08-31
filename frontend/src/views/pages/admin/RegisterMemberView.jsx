@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useMemberController } from "../../../hooks/useMemberHook";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
@@ -29,11 +30,11 @@ export default function RegisterUsersView({ onCancel, onSuccess }) {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!formData.user_id || !formData.first_name || !formData.last_name || !formData.email || !formData.password || !formData.confirmPassword) {
-      alert("Please fill in all required fields.");
+      toast.warning("Please fill in all required fields.");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match. Please check and try again.");
+      toast.warning("Passwords do not match. Please check and try again.");
       return;
     }
     const fullName = `${formData.first_name} ${formData.last_name}`.trim();
@@ -47,14 +48,14 @@ export default function RegisterUsersView({ onCancel, onSuccess }) {
         first_name: formData.first_name,
         last_name: formData.last_name,
       });
-      alert(`Member ${fullName} (${formData.user_id}) registered successfully into database!`);
+      toast.success(`Member ${fullName} (${formData.user_id}) registered successfully into database!`);
       if (onSuccess) {
         onSuccess();
       } else {
         navigate("/users");
       }
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Failed to register user");
+      toast.error(err.response?.data?.message || err.message || "Failed to register user");
     }
   };
 

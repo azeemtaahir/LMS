@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import api from "../../../api/api";
 import {
   FileSpreadsheet,
@@ -197,7 +198,7 @@ export default function ReportsView() {
   // Export CSV
   const handleExportCSV = () => {
     if (filteredIssues.length === 0) {
-      alert("No data available to export.");
+      toast.warning("No data available to export.");
       return;
     }
 

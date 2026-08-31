@@ -1,38 +1,75 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
+import { useMemberController } from "../../../hooks/useMemberHook";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
-import { User, Lock, Save, CheckCircle2, AlertTriangle } from "lucide-react";
+import { User, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function MemberProfileView() {
-  const { user, loginUser } = useAuth();
+  const { user } = useAuth();
+  const { allUsers } = useMemberController();
   const { allIssues } = useTransactionController();
 
-  const [profileData, setProfileData] = useState({
-    name: user?.name || user?.username || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    department: user?.department || "",
-    role: user?.role || "Student",
+  // Dynamically find current user's record strictly matching the logged-in user
+  const liveUserRecord = (allUsers || []).find((u) => {
+    if (!user) return false;
+    const uEmail = String(user.email || "").toLowerCase().trim();
+    const uId = String(user.id || user.db_id || "").toLowerCase().trim();
+    const uStudentId = String(user.studentId || user.user_id || "").toLowerCase().trim();
+
+    const mEmail = String(u.email || "").toLowerCase().trim();
+    const mId = String(u.id || u.db_id || "").toLowerCase().trim();
+    const mStudentId = String(u.studentId || u.user_id || "").toLowerCase().trim();
+
+    if (uEmail && mEmail) {
+      return uEmail === mEmail;
+    }
+    if (uStudentId && mStudentId) {
+      return uStudentId === mStudentId;
+    }
+    if (uId && mId) {
+      return uId === mId;
+    }
+    return false;
   });
 
-  const [passwords, setPasswords] = useState({
-    current: "",
-    new: "",
-    confirm: "",
+  const activeUser = liveUserRecord || user;
+
+  const rawFirstName = activeUser?.first_name || activeUser?.name?.split(" ")[0] || activeUser?.username || "";
+  const rawLastName = activeUser?.last_name || activeUser?.name?.split(" ").slice(1).join(" ") || "";
+
+  const [formData, setFormData] = useState({
+    first_name: rawFirstName,
+    last_name: rawLastName,
+    email: activeUser?.email || "",
+    role: activeUser?.role || "Student",
+    status: activeUser?.status || "active",
   });
 
-  const [updateMessage, setUpdateMessage] = useState("");
+  useEffect(() => {
+    if (activeUser) {
+      const fName = activeUser.first_name || activeUser.name?.split(" ")[0] || activeUser.username || "";
+      const lName = activeUser.last_name || activeUser.name?.split(" ").slice(1).join(" ") || "";
 
-  const userOverdueLoans = (user && allIssues) ? (allIssues || []).filter((item) => {
+      setFormData({
+        first_name: fName,
+        last_name: lName,
+        email: activeUser.email || "",
+        role: activeUser.role || "Student",
+        status: activeUser.status || "active",
+      });
+    }
+  }, [activeUser]);
+
+  const userOverdueLoans = (activeUser && allIssues) ? (allIssues || []).filter((item) => {
     const isReturned = item.status === "Returned" || Boolean(item.returned_date || item.actualReturnedDate);
     const isPaid = item.fineStatus === "Paid" || item.fine_status === "Paid";
     if (isReturned || isPaid) return false;
 
-    const uId = String(user.id || "");
-    const uDbId = String(user.db_id || user.member_id || "");
-    const uStudentId = String(user.studentId || user.user_id || "");
-    const uName = String(user.name || `${user.first_name || ""} ${user.last_name || ""}`).toLowerCase().trim();
-    const uEmail = String(user.email || "").toLowerCase().trim();
+    const uId = String(activeUser.id || "");
+    const uDbId = String(activeUser.db_id || activeUser.member_id || "");
+    const uStudentId = String(activeUser.studentId || activeUser.user_id || "");
+    const uName = String(activeUser.name || `${activeUser.first_name || ""} ${activeUser.last_name || ""}`).toLowerCase().trim();
+    const uEmail = String(activeUser.email || "").toLowerCase().trim();
 
     const mMemberId = String(item.member_id || item.user_id || "");
     const mStudentId = String(item.studentId || "");
@@ -54,162 +91,118 @@ export default function MemberProfileView() {
     return item.status === "Overdue" || isPastDue;
   }) : [];
 
-  const handleProfileSubmit = (e) => {
-    e.preventDefault();
-    loginUser({ ...user, ...profileData });
-    setUpdateMessage("Profile updated successfully!");
-    setTimeout(() => setUpdateMessage(""), 3000);
-  };
-
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (passwords.new !== passwords.confirm) {
-      alert("New password and confirm password do not match.");
-      return;
-    }
-    setPasswords({ current: "", new: "", confirm: "" });
-    setUpdateMessage("Password updated successfully!");
-    setTimeout(() => setUpdateMessage(""), 3000);
-  };
+  const fullNameDisplay = `${formData.first_name} ${formData.last_name}`.trim() || activeUser?.name || "Member";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 select-none">
-      {updateMessage && (
-        <div className="bg-emerald-600 text-white p-4 rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold animate-fade-in">
-          <CheckCircle2 size={18} />
-          <span>{updateMessage}</span>
-        </div>
-      )}
-
+    <div className="max-w-xl mx-auto space-y-3 pb-4 select-none">
       {/* MEMBER HEADER */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl border border-indigo-900/40 shadow-xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
-            {profileData.name ? profileData.name[0].toUpperCase() : "M"}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-3.5 sm:px-4 sm:py-3 rounded-xl border border-indigo-900/40 shadow-md text-white flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+            {fullNameDisplay ? fullNameDisplay[0].toUpperCase() : "M"}
           </div>
-          <div>
-            <h1 className="text-lg font-bold">{profileData.name}</h1>
-            <p className="text-xs text-indigo-200">{profileData.role} • {profileData.department}</p>
+          <div className="min-w-0">
+            <h1 className="text-sm font-bold leading-tight truncate">{fullNameDisplay}</h1>
+            <p className="text-[11px] text-indigo-200 leading-tight truncate">{formData.role} • {formData.email}</p>
           </div>
         </div>
 
         {userOverdueLoans.length > 0 ? (
-          <div className="px-3.5 py-1.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-extrabold flex items-center gap-1.5">
-            <AlertTriangle size={15} className="text-rose-400" />
-            <span>{userOverdueLoans.length} Overdue Book(s)</span>
+          <div className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-extrabold flex items-center gap-1 shrink-0">
+            <AlertTriangle size={12} className="text-rose-400" />
+            <span>{userOverdueLoans.length} Overdue</span>
           </div>
         ) : (
-          <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-            <CheckCircle2 size={15} className="text-emerald-400" />
-            <span>No Overdue Books</span>
+          <div className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 shrink-0">
+            <CheckCircle2 size={12} className="text-emerald-400" />
+            <span>Active Account</span>
           </div>
         )}
       </div>
 
       {userOverdueLoans.length > 0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between text-rose-900 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 font-bold shrink-0">
-              <AlertTriangle size={20} />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-rose-900">Overdue Books Alert</h4>
-              <p className="text-[11px] text-rose-700 font-medium">
-                You currently have <strong>{userOverdueLoans.length}</strong> overdue book(s) to return. Please return them promptly to avoid additional fines.
-              </p>
-            </div>
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 flex items-center justify-between text-rose-900 shadow-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+            <p className="text-[11px] text-rose-800 font-semibold leading-none">
+              Overdue Alert: You have <strong>{userOverdueLoans.length}</strong> unreturned book(s). Please return them promptly.
+            </p>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* EDIT PROFILE FORM */}
-        <form onSubmit={handleProfileSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <User size={18} className="text-indigo-600" />
-            <h2 className="font-bold text-slate-900 uppercase">Personal Details</h2>
-          </div>
+      {/* READ-ONLY MEMBER DETAILS MATCHING SAMPLE PICTURE */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden text-xs">
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-4 py-2.5 flex items-center gap-2 text-white border-b border-indigo-900/40">
+          <User size={15} className="text-indigo-400" />
+          <h2 className="font-bold text-white tracking-tight text-xs">Member Information</h2>
+        </div>
 
+        <div className="p-4 sm:p-5 space-y-3">
+          {/* First Name */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">First Name</label>
             <input
               type="text"
-              value={profileData.name}
-              onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              required
+              value={formData.first_name}
+              disabled
+              readOnly
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 font-medium cursor-not-allowed select-text"
             />
           </div>
 
+          {/* Last Name */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email</label>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Last Name</label>
+            <input
+              type="text"
+              value={formData.last_name}
+              disabled
+              readOnly
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 font-medium cursor-not-allowed select-text"
+            />
+          </div>
+
+          {/* Email Address */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Email Address</label>
             <input
               type="email"
-              value={profileData.email}
-              onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              required
+              value={formData.email}
+              disabled
+              readOnly
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 font-medium cursor-not-allowed select-text"
             />
           </div>
 
+          {/* Role */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Phone Number</label>
-            <input
-              type="text"
-              value={profileData.phone}
-              onChange={(e) => setProfileData((prev) => ({ ...prev, phone: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Role</label>
+            <select
+              value={formData.role}
+              disabled
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 font-medium cursor-not-allowed appearance-none"
+            >
+              <option value="Student">Student</option>
+              <option value="Teacher">Teacher</option>
+              <option value="Member">Member</option>
+            </select>
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs shadow-md hover:bg-indigo-700 transition cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <Save size={15} />
-            <span>Save Profile</span>
-          </button>
-        </form>
-
-        {/* SECURITY FORM */}
-        <form onSubmit={handlePasswordSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Lock size={18} className="text-indigo-600" />
-            <h2 className="font-bold text-slate-900 uppercase">Change Password</h2>
-          </div>
-
+          {/* Account Status */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">New Password</label>
-            <input
-              type="password"
-              value={passwords.new}
-              onChange={(e) => setPasswords((prev) => ({ ...prev, new: e.target.value }))}
-              placeholder="Enter new password"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              required
-            />
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Account Status</label>
+            <select
+              value={formData.status}
+              disabled
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 font-medium cursor-not-allowed appearance-none capitalize"
+            >
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Confirm Password</label>
-            <input
-              type="password"
-              value={passwords.confirm}
-              onChange={(e) => setPasswords((prev) => ({ ...prev, confirm: e.target.value }))}
-              placeholder="Confirm new password"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-xs shadow-md hover:bg-slate-800 transition cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <Lock size={15} />
-            <span>Update Password</span>
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );

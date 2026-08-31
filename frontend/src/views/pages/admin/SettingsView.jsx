@@ -47,7 +47,6 @@ export default function SettingsView() {
 
   const tabs = [
     { name: "Profile", icon: User },
-    { name: "Change Password", icon: Lock },
     { name: "Library Info", icon: Building },
     { name: "Database & Backup", icon: Database },
   ];
@@ -162,63 +161,7 @@ export default function SettingsView() {
         </div>
       )}
 
-      {/* TAB 2: CHANGE PASSWORD */}
-      {activeTab === "Change Password" && (
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          {/* Security & Credentials Header - Dark Navy Bar */}
-          <div className="bg-slate-900 p-3.5 sm:p-4 rounded-xl border border-slate-800 shadow-md text-white">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Security & Credentials</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5 font-medium">Update your password to keep your administrator account secure.</p>
-          </div>
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Current Password</label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white text-slate-800 transition font-medium"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">New Password</label>
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white text-slate-800 transition font-medium"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white text-slate-800 transition font-medium"
-                  required
-                />
-              </div>
-            </div>
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-md shadow-indigo-600/20 active:scale-98 cursor-pointer flex items-center gap-2 disabled:opacity-50"
-              >
-                <Lock size={15} />
-                <span>{saving ? "Updating..." : "Update Password"}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+
 
       {/* TAB 3: LIBRARY INFO */}
       {activeTab === "Library Info" && (

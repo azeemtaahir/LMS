@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
+import { toast } from "sonner";
 import { useBookController } from "../../../hooks/useBookHook";
 import api from "../../../api/api";
 
@@ -70,7 +71,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.author) {
-      alert("Please fill in Book Title and Author Name.");
+      toast.warning("Please fill in Book Title and Author Name.");
       return;
     }
     const finalCategory = isCustomCategory
@@ -99,7 +100,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
         res = { data: { book: { id: Date.now(), ...payload, status: "Available" } } };
       }
 
-      alert(`Book "${formData.title}" added successfully!`);
+      toast.success(`Book "${formData.title}" added successfully!`);
       if (refreshBooks) await refreshBooks();
       if (onSuccess) {
         onSuccess(res.data?.book || payload);
@@ -108,7 +109,7 @@ export default function AddBookView({ onCancel, onSuccess }) {
       }
     } catch (err) {
       console.error("Error saving book:", err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     }
   };
 

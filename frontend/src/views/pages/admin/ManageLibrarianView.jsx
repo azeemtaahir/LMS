@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useLibrarianController } from "../../../hooks/useLibrarianHook";
 import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import RegisterLibrarianView from "./RegisterLibrarianView";
@@ -98,7 +99,7 @@ export default function ManageLibrarianView() {
   const handleSaveEditLibrarian = (e) => {
     e.preventDefault();
     if (!editFormData.name || !editFormData.email) {
-      alert("Librarian Name and Email are required.");
+      toast.warning("Librarian Name and Email are required.");
       return;
     }
     if (editingLibrarian && handleUpdateLibrarian) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import api from "../api/api";
 
 export const useMemberHook = () => {
@@ -433,7 +434,7 @@ export const useMemberHook = () => {
     });
 
     if (isDuplicate) {
-      alert(
+      toast.warning(
         "⚠️ User is already created / registered with this email or User ID!"
       );
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useLibrarianController } from "../../../hooks/useLibrarianHook";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
@@ -30,11 +31,11 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!formData.librarianId || !formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
-      alert("Please fill in all required fields.");
+      toast.warning("Please fill in all required fields.");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match. Please check and try again.");
+      toast.warning("Passwords do not match. Please check and try again.");
       return;
     }
     try {
@@ -42,14 +43,14 @@ export default function RegisterLibrarianView({ onCancel, onSuccess }) {
         ...formData,
         name: formData.fullName,
       });
-      alert(`Librarian ${formData.fullName} registered successfully!`);
+      toast.success(`Librarian ${formData.fullName} registered successfully!`);
       if (onSuccess) {
         onSuccess();
       } else {
         navigate("/librarians");
       }
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Failed to register librarian");
+      toast.error(err.response?.data?.message || err.message || "Failed to register librarian");
     }
   };
 

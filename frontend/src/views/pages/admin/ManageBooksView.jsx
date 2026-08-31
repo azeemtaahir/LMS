@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useBookController } from "../../../hooks/useBookHook";
 import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import AddBookView from "./AddBookView";
@@ -91,7 +92,7 @@ export default function ManageBooksView() {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editFormData.title || !editFormData.author) {
-      alert("Book Title and Author Name are required.");
+      toast.warning("Book Title and Author Name are required.");
       return;
     }
     const payload = {
@@ -114,12 +115,12 @@ export default function ManageBooksView() {
       } catch (err) {
         console.warn("API PUT /books fallback:", err?.message);
       }
-      alert("Book updated successfully!");
+      toast.success("Book updated successfully!");
       if (refreshBooks) await refreshBooks();
       setEditingBook(null);
     } catch (err) {
       console.error("Failed to update book", err);
-      alert(err.response?.data?.message || "Failed to update book.");
+      toast.error(err.response?.data?.message || "Failed to update book.");
     }
   };
 
@@ -127,11 +128,11 @@ export default function ManageBooksView() {
     if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
       try {
         await api.delete(`/books/${book.id}`);
-        alert(`Book "${book.title}" deleted successfully!`);
+        toast.success(`Book "${book.title}" deleted successfully!`);
         if (refreshBooks) await refreshBooks();
       } catch (err) {
         console.error("Failed to delete book", err);
-        alert(err.response?.data?.message || "Failed to delete book.");
+        toast.error(err.response?.data?.message || "Failed to delete book.");
       }
     }
   };

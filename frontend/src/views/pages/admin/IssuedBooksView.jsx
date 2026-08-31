@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
 import { Eye, ChevronLeft, ChevronRight, Edit3, X, Calendar } from "lucide-react";
 
@@ -140,7 +141,7 @@ export default function IssuedBooksView() {
                         )}
                         <button
                           title="View Details"
-                          onClick={() => alert(`Issue Log Details:\nID: ${item.id}\nStudent: ${item.studentName}\nBook: ${item.bookTitle}\nIssue Date: ${item.issueDate}\nDue Date: ${item.dueDate || item.returnDate}\nStatus: ${item.status}`)}
+                          onClick={() => toast.info(`Issue Log #${item.id} Details`, { description: `Student: ${item.studentName} | Book: ${item.bookTitle} | Issued: ${item.issueDate} | Due: ${item.dueDate || item.returnDate} | Status: ${item.status}` })}
                           className="p-1.5 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition cursor-pointer"
                         >
                           <Eye size={15} />

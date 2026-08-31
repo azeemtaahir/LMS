@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import api from "../api/api";
 
 export const useLibrarianHook = () => {
@@ -99,7 +100,7 @@ export const useLibrarianHook = () => {
     });
 
     if (isDuplicate) {
-      alert("⚠️ User is already generated / registered with this email or Librarian ID!");
+      toast.warning("⚠️ User is already generated / registered with this email or Librarian ID!");
       return null;
     }
 

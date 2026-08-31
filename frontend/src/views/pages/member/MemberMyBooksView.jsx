@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "../../../context/AuthContext";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
 import { RotateCcw, BookOpen, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -84,15 +85,15 @@ export default function MemberMyBooksView() {
 
   const handleRenewBook = (loanId) => {
     if (renewedBookIds.includes(loanId)) {
-      alert("This book has already been renewed maximum times.");
+      toast.warning("This book has already been renewed maximum times.");
       return;
     }
     setRenewedBookIds((prev) => [...prev, loanId]);
-    alert("Book renewal request processed! Due date extended by 14 days.");
+    toast.success("Book renewal request processed! Due date extended by 14 days.");
   };
 
   const handleRequestReturn = (title) => {
-    alert(`Return request submitted for "${title}". Please drop off the physical book at the library desk.`);
+    toast.info(`Return request submitted for "${title}". Please drop off the physical book at the library desk.`);
   };
 
   return (

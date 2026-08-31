@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useBookController } from "../../../hooks/useBookHook";
 import BookCoverImage from "../../components/BookCoverImage";
+import Pagination from "../../components/Pagination";
 
 import {
   Search,
@@ -19,6 +21,9 @@ export default function MemberSearchBooksView() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [reservedBookIds, setReservedBookIds] = useState([]);
   const [reservationSuccessMessage, setReservationSuccessMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ITEMS_PER_PAGE = 50;
 
   const categories = [
     "All",
@@ -44,14 +49,24 @@ export default function MemberSearchBooksView() {
     return matchesSearch && matchesCat && matchesAvail;
   });
 
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, availabilityFilter]);
+
+  const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
+  const paginatedBooks = filteredBooks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const handleReserveBook = (book) => {
     if (reservedBookIds.includes(book.id)) {
-      alert(`You have already requested to reserve "${book.title}".`);
+      toast.warning(`You have already requested to reserve "${book.title}".`);
       return;
     }
     setReservedBookIds((prev) => [...prev, book.id]);
-    setReservationSuccessMessage(`Reservation request submitted successfully for "${book.title}"!`);
-    setTimeout(() => setReservationSuccessMessage(""), 4000);
+    toast.success(`Reservation request submitted successfully for "${book.title}"!`);
   };
 
   return (
@@ -129,69 +144,80 @@ export default function MemberSearchBooksView() {
             <p className="text-sm font-semibold text-slate-600">No books found matching your criteria.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
-            {filteredBooks.map((book) => {
-              const isAvailable = Number(book.availableCopies ?? book.copies_owned ?? 0) > 0;
-              const isReserved = reservedBookIds.includes(book.id);
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5 mb-6">
+              {paginatedBooks.map((book) => {
+                const isAvailable = Number(book.availableCopies ?? book.copies_owned ?? 0) > 0;
+                const isReserved = reservedBookIds.includes(book.id);
 
-              return (
-                <div
-                  key={book.id}
-                  className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
-                >
-                  <div className="p-3 sm:p-4 space-y-3">
-                    <div className="w-full aspect-[3/4] rounded-xl bg-slate-900 border border-slate-200 flex items-center justify-center text-white relative overflow-hidden">
-                      <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
-                      <span
-                        className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border ${
-                          isAvailable
-                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                            : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                return (
+                  <div
+                    key={book.id}
+                    className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
+                  >
+                    <div className="p-3 sm:p-4 space-y-3">
+                      <div className="w-full aspect-[3/4] rounded-xl bg-slate-900 border border-slate-200 flex items-center justify-center text-white relative overflow-hidden">
+                        <BookCoverImage book={book} className="w-full h-full object-cover rounded-xl" />
+                        <span
+                          className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-bold border backdrop-blur-sm z-10 ${
+                            isAvailable
+                              ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-xs"
+                              : "bg-amber-950/80 text-amber-300 border-amber-500/50 shadow-xs"
+                          }`}
+                        >
+                          {isAvailable ? "Available" : "Checked Out"}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100 inline-block mb-1">
+                          {book.category || "General"}
+                        </span>
+                        <h3 className="text-xs font-bold text-slate-900 line-clamp-1">
+                          {book.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium">By {book.author}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-2 sm:p-3 bg-slate-50 border-t border-slate-100 flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2">
+                      <button
+                        onClick={() => setSelectedBook(book)}
+                        className="flex-1 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 min-w-[70px]"
+                      >
+                        <Info size={13} />
+                        <span>Details</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleReserveBook(book)}
+                        disabled={!isAvailable || isReserved}
+                        className={`flex-1 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-xl text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 min-w-[70px] ${
+                          isReserved
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                            : isAvailable
+                            ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20"
+                            : "bg-slate-200 text-slate-400 cursor-not-allowed"
                         }`}
                       >
-                        {isAvailable ? "Available" : "Checked Out"}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100 inline-block mb-1">
-                        {book.category || "General"}
-                      </span>
-                      <h3 className="text-xs font-bold text-slate-900 line-clamp-1">
-                        {book.title}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 font-medium">By {book.author}</p>
+                        {isReserved ? <BookmarkCheck size={13} /> : <BookmarkPlus size={13} />}
+                        <span>{isReserved ? "Requested" : "Reserve"}</span>
+                      </button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 sm:gap-2">
-                    <button
-                      onClick={() => setSelectedBook(book)}
-                      className="flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <Info size={13} />
-                      <span>Details</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleReserveBook(book)}
-                      disabled={!isAvailable || isReserved}
-                      className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl text-[10px] sm:text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 ${
-                        isReserved
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                          : isAvailable
-                          ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20"
-                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                      }`}
-                    >
-                      {isReserved ? <BookmarkCheck size={13} /> : <BookmarkPlus size={13} />}
-                      <span>{isReserved ? "Requested" : "Reserve"}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+            {/* PAGINATION COMPONENT */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={filteredBooks.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+            />
+          </>
         )}
       </div>
 

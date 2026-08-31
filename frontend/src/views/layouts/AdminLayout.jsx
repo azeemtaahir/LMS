@@ -23,7 +23,7 @@ export default function AdminLayout({ children }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overflow-x-hidden no-scrollbar">
         <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-4 min-w-0 overflow-x-hidden no-scrollbar">
+        <main className="flex-1 px-4 py-3 sm:px-5 sm:py-3.5 md:px-6 md:py-4 min-w-0 overflow-x-hidden no-scrollbar">
           {children || <Outlet context={{ quickActionTrigger, setQuickActionTrigger }} />}
         </main>
       </div>

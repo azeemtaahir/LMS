@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 import { useBookController } from "../../../hooks/useBookHook";
 import { useMemberController } from "../../../hooks/useMemberHook";
 import { useTransactionController } from "../../../hooks/useTransactionHook";
@@ -256,15 +257,15 @@ export default function IssueBookView() {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!issueFormData.studentId) {
-      alert("Please search and select a borrower user.");
+      toast.warning("Please search and select a borrower user.");
       return;
     }
     if (!issueFormData.bookId) {
-      alert("Please search and select a book to issue.");
+      toast.warning("Please search and select a book to issue.");
       return;
     }
     if (isOutOfStock) {
-      alert(
+      toast.warning(
         `Book "${selectedBookObj.title}" is out of stock (0/${
           selectedBookObj.totalQuantity ?? selectedBookObj.copies_owned ?? 0
         } available).`
@@ -272,7 +273,7 @@ export default function IssueBookView() {
       return;
     }
     if (hasActiveSameTitleOrIsbnLoan) {
-      alert(
+      toast.warning(
         `This member already has an active issue for '${selectedBookObj?.title}'.`
       );
       return;

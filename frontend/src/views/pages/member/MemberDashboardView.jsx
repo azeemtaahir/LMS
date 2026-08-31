@@ -100,22 +100,22 @@ export default function MemberDashboardView() {
   }, 0);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10 select-none">
+    <div className="space-y-4 max-w-7xl mx-auto pb-6 select-none">
       {/* GREETING HERO HEADER */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-3.5 sm:px-6 sm:py-4 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl p-3 sm:px-5 sm:py-3 text-white shadow-md relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-semibold mb-1 border border-indigo-500/30">
-              <Sparkles size={12} className="text-amber-400 fill-amber-400" />
-              <span>Library User Portal</span>
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold mb-0.5 border border-indigo-500/30">
+              <Sparkles size={11} className="text-amber-400 fill-amber-400" />
+              <span>Library Portal</span>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight leading-tight">
               Welcome back, {memberName}!
             </h1>
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-300">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">
-                {memberRole === "Teacher" ? <UserCheck size={12} /> : <GraduationCap size={12} />}
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-300 leading-tight">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30 text-[10px]">
+                {memberRole === "Teacher" ? <UserCheck size={11} /> : <GraduationCap size={11} />}
                 {memberRole}
               </span>
               <span>•</span>
@@ -125,12 +125,12 @@ export default function MemberDashboardView() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/search"
-              className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 inline-flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-sm inline-flex items-center gap-1.5"
             >
-              <Search size={14} />
+              <Search size={13} />
               <span>Search Books</span>
             </Link>
           </div>
@@ -139,146 +139,132 @@ export default function MemberDashboardView() {
 
       {/* PENDING FINES ALERT BANNER */}
       {totalPendingFines > 0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between text-rose-900 shadow-xs animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 font-bold shrink-0">
-              <AlertTriangle size={20} />
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-center justify-between text-rose-900 shadow-xs animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600 font-bold shrink-0">
+              <AlertTriangle size={18} />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-rose-900">Pending Library Fine Alert</h4>
-              <p className="text-[11px] text-rose-700 font-medium">
-                You have unpaid overdue fines totaling <strong className="text-rose-900 font-extrabold">{totalPendingFines} PKR</strong> for unreturned books. Please clear your fine at the library counter.
+              <h4 className="text-xs font-bold text-rose-900 leading-tight">Pending Fine Alert</h4>
+              <p className="text-[11px] text-rose-700 font-medium leading-tight">
+                You have unpaid overdue fines totaling <strong className="text-rose-900 font-extrabold">{totalPendingFines} PKR</strong>. Please clear fine at counter.
               </p>
             </div>
           </div>
-          <span className="px-3.5 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-extrabold shadow-xs whitespace-nowrap">
-            {totalPendingFines} PKR Pending
+          <span className="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-xs font-extrabold shadow-xs whitespace-nowrap">
+            {totalPendingFines} PKR Unpaid
           </span>
         </div>
       )}
 
       {/* 4 MEMBER STAT CARDS */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 bg-white shadow-xs">
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <BookMarked size={22} />
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
+        <div className="glass-card glass-card-hover p-2.5 sm:p-3 rounded-xl border border-slate-200/80 flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <BookMarked size={18} />
           </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="min-w-0">
+            <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-none mb-0.5">
               {borrowedBooks.length}
             </div>
-            <div className="text-[11px] font-semibold text-slate-500">Currently Borrowed</div>
+            <div className="text-[10px] font-semibold text-slate-500 truncate leading-none">Borrowed</div>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 bg-white shadow-xs">
-          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-            <AlertTriangle size={22} />
+        <div className="glass-card glass-card-hover p-2.5 sm:p-3 rounded-xl border border-slate-200/80 flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <AlertTriangle size={18} />
           </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="min-w-0">
+            <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-none mb-0.5">
               {overdueCount}
             </div>
-            <div className="text-[11px] font-semibold text-slate-500">Overdue Books</div>
+            <div className="text-[10px] font-semibold text-slate-500 truncate leading-none">Overdue</div>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 bg-white shadow-xs">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 size={22} />
+        <div className="glass-card glass-card-hover p-2.5 sm:p-3 rounded-xl border border-slate-200/80 flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={18} />
           </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="min-w-0">
+            <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-none mb-0.5">
               {books.length}
             </div>
-            <div className="text-[11px] font-semibold text-slate-500">Total Books</div>
+            <div className="text-[10px] font-semibold text-slate-500 truncate leading-none">Total Books</div>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 bg-white shadow-xs">
-          <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-bold text-lg">
+        <div className="glass-card glass-card-hover p-2.5 sm:p-3 rounded-xl border border-slate-200/80 flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-bold text-xs">
             PKR
           </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">{totalPendingFines} PKR</div>
-            <div className="text-[11px] font-semibold text-slate-500">Pending Fines</div>
+          <div className="min-w-0">
+            <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-none mb-0.5">{totalPendingFines} PKR</div>
+            <div className="text-[10px] font-semibold text-slate-500 truncate leading-none">Fines</div>
           </div>
         </div>
       </div>
 
       {/* TWO COLUMN GRID: ACTIVE LOANS & RECOMMENDED */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white border-b border-slate-800">
-            <div className="flex items-center gap-2.5 font-bold text-xs sm:text-sm tracking-tight">
-              <BookMarked size={18} className="text-indigo-400" />
-              <span>My Active Borrowed Books</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 flex-1 min-h-0">
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-w-0">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-5 py-3 flex items-center justify-between text-white border-b border-indigo-900/40">
+            <div className="flex items-center gap-2 font-bold text-xs sm:text-sm tracking-tight">
+              <BookMarked size={16} className="text-indigo-400" />
+              <span>Loans</span>
             </div>
             <Link
               to="/my-books"
               className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
             >
-              View My Books <ArrowRight size={14} />
+              View All <ArrowRight size={13} />
             </Link>
           </div>
 
-          <div className="p-4 space-y-3 flex-1">
+          <div className="p-3 space-y-2 flex-1">
             {borrowedBooks.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs font-medium">
+              <div className="py-6 text-center text-slate-400 text-xs font-medium">
                 No active borrowed books currently.
               </div>
             ) : (
-              borrowedBooks.map((item) => (
+              borrowedBooks.slice(0, 4).map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-12 h-16 shrink-0">
-                      <BookCoverImage book={item} className="w-12 h-16 object-cover rounded-lg shadow-sm border border-slate-200" />
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="w-9 h-12 shrink-0">
+                      <BookCoverImage book={item} className="w-9 h-12 object-cover rounded shadow-xs border border-slate-200" />
                     </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-800 line-clamp-1">{item.title}</h3>
-                      <p className="text-[11px] text-slate-500 font-medium">By {item.author}</p>
-                      <div className="flex items-center gap-2 mt-1.5 text-[10px]">
-                        <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100">
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">{item.title}</h3>
+                      <p className="text-[10px] text-slate-500 font-medium leading-tight">By {item.author}</p>
+                      <div className="flex items-center gap-1.5 mt-1 text-[10px]">
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100 text-[9px]">
                           {item.category}
                         </span>
-                        <span className="text-slate-400">Issued: {item.issueDate}</span>
+                        <span className="text-slate-400 text-[10px]">Issued: {item.issueDate}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center sm:flex-col sm:items-end justify-between gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                  <div className="flex items-center sm:flex-col sm:items-end justify-between gap-1 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block font-medium">Due Date</span>
-                      <span className="text-xs font-bold text-slate-800">{item.dueDate}</span>
+                      <span className="text-[10px] text-slate-400 block font-medium leading-none">Due Date</span>
+                      <span className="text-xs font-bold text-slate-800 leading-tight">{item.dueDate}</span>
                     </div>
 
-                    <div className="flex flex-col sm:items-end gap-1">
+                    <div className="flex flex-col sm:items-end gap-0.5">
                       {item.isPastDue ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">
-                          <AlertTriangle size={12} />
-                          Overdue ({Math.abs(item.daysLeft)} days late)
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">
+                          <AlertTriangle size={11} />
+                          Overdue ({Math.abs(item.daysLeft)}d late)
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
-                          <Clock size={12} />
-                          {item.daysLeft} days left
-                        </span>
-                      )}
-
-                      {item.isPastDue && (
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            item.fineStatus === "Paid" || item.fine_status === "Paid"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-rose-50 text-rose-700 border-rose-200"
-                          }`}
-                        >
-                          {item.fineStatus === "Paid" || item.fine_status === "Paid"
-                            ? "Fine Status: Paid"
-                            : `Fine: ${item.fineAmount} PKR (Unpaid)`}
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                          <Clock size={11} />
+                          {item.daysLeft}d left
                         </span>
                       )}
                     </div>
@@ -289,31 +275,31 @@ export default function MemberDashboardView() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white border-b border-slate-800">
-            <div className="flex items-center gap-2.5 font-bold text-xs sm:text-sm tracking-tight">
-              <Sparkles size={18} className="text-amber-400" />
-              <span>Catalog Suggestions</span>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-w-0">
+          <div className="bg-slate-900 px-5 py-3 flex items-center justify-between text-white border-b border-slate-800">
+            <div className="flex items-center gap-2 font-bold text-xs sm:text-sm tracking-tight">
+              <Sparkles size={16} className="text-amber-400" />
+              <span>Explore</span>
             </div>
             <Link
               to="/search"
               className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
             >
-              Search All <ArrowRight size={14} />
+              Search All <ArrowRight size={13} />
             </Link>
           </div>
 
-          <div className="p-4 space-y-3">
-            {books.slice(0, 4).map((b) => (
+          <div className="p-3 space-y-1.5">
+            {books.slice(0, 3).map((b) => (
               <div
                 key={b.id}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200"
+                className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200"
               >
-                <div className="w-10 h-14 shrink-0">
-                  <BookCoverImage book={b} className="w-10 h-14 object-cover rounded-lg border border-slate-200 shadow-xs" />
+                <div className="w-8 h-11 shrink-0">
+                  <BookCoverImage book={b} className="w-8 h-11 object-cover rounded border border-slate-200 shadow-xs" />
                 </div>
                 <div className="truncate flex-1 min-w-0">
-                  <div className="text-xs font-bold text-slate-800 truncate">{b.title}</div>
+                  <div className="text-xs font-bold text-slate-800 truncate leading-tight">{b.title}</div>
                   <div className="text-[10px] text-slate-500 truncate">{b.author}</div>
                   <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 inline-block mt-0.5">
                     Available ({b.availableQuantity || b.availableCopies || 1})

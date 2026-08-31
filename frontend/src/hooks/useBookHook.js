@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import api from "../api/api";
 
 const validateBookInput = (data) => {
@@ -195,7 +196,7 @@ export const useBookHook = () => {
       }
       setIsAddModalOpen(false);
       setEditingBook(null);
-      alert("Book added successfully!");
+      toast.success("Book added successfully!");
     } catch (err) {
       console.error("Save book error", err);
     }
